@@ -106,18 +106,14 @@ public class Keyboards {
 
         keyboard.add(new KeyboardRow());
 
-        int elInRow = 7;
-
+        int elementsInARow = 7;
         int i = 0;
-        int j = 0;
         for (String string : autobusWithoutRepeats) {
-            if (j == elInRow) {
-                j = 0;
+            if (keyboard.get(i).size() == elementsInARow) {
                 i++;
                 keyboard.add(new KeyboardRow());
             }
             keyboard.get(i).add(string);
-            j++;
         }
 
 
