@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -75,7 +75,7 @@
             <artifactId>jtelebot-core</artifactId>
             <version>0.1.0</version>
         </dependency>
-        <!-- region ROBBBE BELLE DI FBK-->
+        <!-- region ROBBBE BELLE DI FBK -->
         <dependency>
             <groupId>eu.trentorise.smartcampus</groupId>
             <artifactId>mobilityservice.client</artifactId>
@@ -93,7 +93,14 @@
             <artifactId>commons-lang</artifactId>
             <version>2.5</version>
         </dependency>
-        <!-- endregion ROBBBE BELLE DI FBK-->
+        <!-- endregion ROBBBE BELLE DI FBK -->
+        <!-- region ROBBBE Spring Data MongoDB -->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-mongodb</artifactId>
+            <version>1.9.2.RELEASE</version>
+        </dependency>
+        <!-- endregion ROBBBE Spring Data MongoDB -->
     </dependencies>
 
     <build>

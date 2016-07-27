@@ -2,11 +2,13 @@ package org.telegram.updateshandlers.GestioneMessaggi;
 
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
+import org.apache.commons.lang.math.NumberUtils;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -99,13 +101,24 @@ public class Keyboards {
         ReplyKeyboardMarkup replyKeyboardMarkup = keyboard();
         List<KeyboardRow> keyboard = new ArrayList<>();
         List<String> autobusWithoutRepeats = new ArrayList<>();
+        List<String> autobusNum = new ArrayList<>();
+        List<String> autobusTxt = new ArrayList<>();
 
         for (Route route : autobus)
             if (!autobusWithoutRepeats.contains(route.getRouteShortName()))
                 autobusWithoutRepeats.add(route.getRouteShortName());
 
-        keyboard.add(new KeyboardRow());
+        for (String string : autobusWithoutRepeats)
+            if (NumberUtils.isNumber(string)) autobusNum.add(string);
+            else autobusTxt.add(string);
 
+        autobusNum.sort(Comparator.comparing(Integer::parseInt));
+
+        autobusWithoutRepeats.clear();
+        autobusWithoutRepeats.addAll(autobusNum);
+        autobusWithoutRepeats.addAll(autobusTxt);
+
+        keyboard.add(new KeyboardRow());
         int elementsInARow = 7;
         int i = 0;
         for (String string : autobusWithoutRepeats) {

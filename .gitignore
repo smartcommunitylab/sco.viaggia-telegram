@@ -23,8 +23,10 @@ buildNumber.properties
 hs_err_pid*
 
 # unneeded files
-.idea/dataSources.*
-.idea/workspace.xml
+.idea
+
+# secret token
+src/main/java/org/telegram/BotConfig.java
 
 # logs files
 *.log

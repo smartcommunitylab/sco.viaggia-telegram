@@ -3,12 +3,7 @@ package org.telegram.updateshandlers.GestioneMessaggi;
 import eu.trentorise.smartcampus.mobilityservice.MobilityDataService;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import eu.trentorise.smartcampus.mobilityservice.model.TaxiContact;
-import eu.trentorise.smartcampus.mobilityservice.model.TripData;
-import it.sayservice.platform.smartplanner.data.message.Position;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.Id;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.Stop;
+import it.sayservice.platform.smartplanner.data.message.otpbeans.*;
 import org.telegram.telegrambots.api.objects.Location;
 
 import java.util.ArrayList;
@@ -20,6 +15,7 @@ public class Database {
     private static final String TRAINS_ID_BV = "6";
     private static final String TRAINS_ID_TB = "5";
     private static final String TRAINS_ID_TM = "10";
+    private static final String SERVER_URL = "https://tn.smartcommunitylab.it/core.mobility";
     private static List<Parking> parkings = new ArrayList<>();
     private static List<Parking> bikeSharings = new ArrayList<>();
     private static List<TaxiContact> taxi = new ArrayList<>();
@@ -28,8 +24,6 @@ public class Database {
     private static List<Route> trains_TM = new ArrayList<>();
     private static List<Route> trains_TB = new ArrayList<>();
     private static List<Route> trains = new ArrayList<>();
-
-    private static final String SERVER_URL = "https://tn.smartcommunitylab.it/core.mobility";
     private static MobilityDataService dataService = new MobilityDataService(SERVER_URL);
 
     private static String capitalize(String s) {
@@ -37,7 +31,15 @@ public class Database {
         String[] words = s.split("\\s");
         for (String string : words)
             text += (string.substring(0, 1).toUpperCase() + string.substring(1).toLowerCase() + " ");
-        return text.substring(0, text.length()-1);
+        return text.substring(0, text.length() - 1);
+    }
+
+    private static String addSpace(String s) {
+        return s.replace("/", " / ").trim();
+    }
+
+    public static List<TaxiContact> getTaxiInfo() throws SecurityException, MobilityServiceException {
+        return taxi = dataService.getTaxiAgencyContacts(null);
     }
 
     public static List<Parking> getParkings() throws SecurityException, MobilityServiceException {
@@ -46,10 +48,6 @@ public class Database {
 
     public static List<Parking> getBikeSharing() throws SecurityException, MobilityServiceException {
         return bikeSharings = dataService.getBikeSharings("BIKE_SHARING_TOBIKE_TRENTO", null);
-    }
-
-    public static List<TaxiContact> getTaxiInfo() throws SecurityException, MobilityServiceException {
-        return taxi = dataService.getTaxiAgencyContacts(null);
     }
 
     public static List<Parking> getNear(List<Parking> zone, Location loc) {
@@ -61,11 +59,13 @@ public class Database {
         return near;
     }
 
-    public static List<Route> getAutbus() throws SecurityException, MobilityServiceException {
+    // region TODO
+
+    public static List<Route> getAutbusRoute() throws SecurityException, MobilityServiceException {
         return autobus = dataService.getRoutes(AUTOBUS_ID, null);
     }
 
-    public static List<Route> getTrains() throws SecurityException, MobilityServiceException {
+    public static List<Route> getTrainsRoute() throws SecurityException, MobilityServiceException {
         trains.clear();
         trains_BV.clear();
         trains_TB.clear();
@@ -78,7 +78,8 @@ public class Database {
 
         for (Route r : trains_BV) {
             r.setRouteLongName(addSpace(r.getRouteLongName()));
-            r.setRouteLongName(capitalize(r.getRouteLongName()));}
+            r.setRouteLongName(capitalize(r.getRouteLongName()));
+        }
 
 
         for (Route r : trains_TB) {
@@ -86,7 +87,7 @@ public class Database {
             r.setRouteLongName(capitalize(r.getRouteLongName()));
         }
 
-        for (Route r : trains_TM){
+        for (Route r : trains_TM) {
             r.setRouteLongName(addSpace(r.getRouteLongName()));
             r.setRouteLongName(capitalize(r.getRouteLongName()));
         }
@@ -99,12 +100,9 @@ public class Database {
         return trains;
     }
 
-    private static String addSpace(String s) {
-        return s.replace("/", " / ").trim();
-    }
-
     public static List<Stop> getStopAutobus(String autobusID) throws SecurityException, MobilityServiceException {
         Id id = stopAutobusId(autobusID);
+        if (id == null) System.err.println("NULL, mi spiace... Ritenta, sarai piu fortunato");
         return id == null ? null : dataService.getStops(AUTOBUS_ID, id.getId(), null);
     }
 
@@ -116,8 +114,8 @@ public class Database {
 
     }
 
-    public static List<TripData> getNextTrips(String agencyId, String stopId) throws MobilityServiceException {
-        return dataService.getNextTrips(agencyId, stopId, 5, null);
+    public static List<StopTime> getNextTrips(String agencyId, String routeId, String stopId) throws MobilityServiceException {
+        return dataService.getStopTimes(agencyId, routeId, stopId, null);
     }
 
     private static Id stopAutobusId(String autobusID) {
@@ -151,5 +149,15 @@ public class Database {
 
         return null;
     }
+
+    public static void getAutobusTimetable() throws MobilityServiceException {
+        List<Route> routes = dataService.getRoutes(AUTOBUS_ID, null);
+        List<Stop> stops = dataService.getStops(AUTOBUS_ID, routes.get(0).getId().getId(), null);
+        List<StopTime> times = dataService.getStopTimes(AUTOBUS_ID, routes.get(0).getId().getId(), stops.get(0).getId(), null);
+
+        System.out.println(times.toString());
+    }
+
+    // endregion TODO
 
 }

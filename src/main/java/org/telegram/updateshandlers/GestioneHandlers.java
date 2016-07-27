@@ -1,7 +1,6 @@
 package org.telegram.updateshandlers;
 
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
-import eu.trentorise.smartcampus.mobilityservice.model.TripData;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Stop;
 import org.telegram.BotConfig;
@@ -94,10 +93,10 @@ public class GestioneHandlers extends TelegramLongPollingBot {
                                 sendMessageDefault(message, keyboardStart(chatId), textStartTaxi(Database.getTaxiInfo()));
                                 break;
                             case AUTOBUSCOMMAND:
-                                sendMessageDefault(message, keyboardAutobus(chatId, Database.getAutbus()), textStartAutobus(Current.getLanguage(chatId)));
+                                sendMessageDefault(message, keyboardAutobus(chatId, Database.getAutbusRoute()), textStartAutobus(Current.getLanguage(chatId)));
                                 break;
                             case TRAINSCOMMAND:
-                                sendMessageDefault(message, keyboardTrains(chatId, Database.getTrains()), textStartTrains(Current.getLanguage(chatId)));
+                                sendMessageDefault(message, keyboardTrains(chatId, Database.getTrainsRoute()), textStartTrains(Current.getLanguage(chatId)));
                                 break;
                             case PARKINGSCOMMAND:
                                 sendMessageDefault(message, keyboardParkings(chatId, Database.getParkings()), textStartParkings(Current.getLanguage(chatId)));
@@ -189,21 +188,36 @@ public class GestioneHandlers extends TelegramLongPollingBot {
     // region TODO voids
 
     private void autobus(Message message) throws TelegramApiException, MobilityServiceException {
-        List<TripData> bibbula = Database.getNextTrips("12", Database.getStopAutobus("12").get(0).getId());
+        Database.getAutobusTimetable();
+
+        /*List<Route> routes = Database.getAutbusRoute();
+        List<Stop> stops = Database.getStopAutobus(message.getText());
+
+        List<StopTime> bibbula = Database.getNextTrips("12", routes.get(0).getId().getId(), stops.get(0).getId());
         if (bibbula == null) option(message);
         else
-            sendMessageDefault(message, keyboardAutobus(message.getChatId(), Database.getAutbus()), textAutobus(bibbula));
+            sendMessageDefault(message, keyboardAutobus(message.getChatId(), Database.getAutbusRoute()), textAutobus(bibbula));*/
     }
 
     private void trains(Message message) throws TelegramApiException, MobilityServiceException {
         List<Stop> bibbula = Database.getStopTrain(message.getText());
         if (bibbula == null) option(message);
-        else sendMessageDefault(message, keyboardTrains(message.getChatId(), Database.getTrains()), textTrain(bibbula));
+        else
+            sendMessageDefault(message, keyboardTrains(message.getChatId(), Database.getTrainsRoute()), textTrain(bibbula));
     }
 
     // endregion TODO voids
 
     // region utilities
+
+    private void sendMessageDefaultWithReply(Message message, ReplyKeyboard keyboard, String text) throws TelegramApiException {
+        SendMessage sendMessage = new SendMessage().setChatId(message.getChatId().toString()).enableMarkdown(true);
+        sendMessage.setText(text);
+        sendMessage.setReplyMarkup(keyboard);
+        sendMessage.setReplyToMessageId(message.getMessageId());
+
+        sendMessage(sendMessage);
+    }
 
     private void sendMessageDefault(Message message, ReplyKeyboard keyboard, String text) throws TelegramApiException {
         SendMessage sendMessage = new SendMessage().setChatId(message.getChatId().toString()).enableMarkdown(true);
@@ -215,15 +229,6 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
     private void sendMessageDefault(Message message, String text) throws TelegramApiException {
         sendMessageDefault(message, null, text);
-    }
-
-    private void sendMessageDefaultWithReply(Message message, ReplyKeyboard keyboard, String text) throws TelegramApiException {
-        SendMessage sendMessage = new SendMessage().setChatId(message.getChatId().toString()).enableMarkdown(true);
-        sendMessage.setText(text);
-        sendMessage.setReplyMarkup(keyboard);
-        sendMessage.setReplyToMessageId(message.getMessageId());
-
-        sendMessage(sendMessage);
     }
 
     private void sendVenueDefault(Message message, Float latitude, Float longitude) throws TelegramApiException {
