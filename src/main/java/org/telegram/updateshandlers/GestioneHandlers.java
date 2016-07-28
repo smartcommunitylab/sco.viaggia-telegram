@@ -1,12 +1,15 @@
 package org.telegram.updateshandlers;
 
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
+import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Stop;
 import org.telegram.BotConfig;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.send.SendVenue;
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
@@ -40,6 +43,13 @@ public class GestioneHandlers extends TelegramLongPollingBot {
                     handleIncomingTextMessage(message);
                 else if (message.hasLocation())
                     handleIncomingPositionMessage(message);
+            } else if (update.getCallbackQuery() != null) {
+                CallbackQuery cbq = update.getCallbackQuery();
+                EditMessageText prova = new EditMessageText();
+                prova.setMessageId(update.getCallbackQuery().getMessage().getMessageId());
+                prova.setChatId(update.getCallbackQuery().getMessage().getChatId().toString());
+                prova.setReplyMarkup(getInlineKeyboard());
+                editMessageText(prova);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -188,15 +198,11 @@ public class GestioneHandlers extends TelegramLongPollingBot {
     // region TODO voids
 
     private void autobus(Message message) throws TelegramApiException, MobilityServiceException {
-        Database.getAutobusTimetable();
-
-        /*List<Route> routes = Database.getAutbusRoute();
-        List<Stop> stops = Database.getStopAutobus(message.getText());
-
-        List<StopTime> bibbula = Database.getNextTrips("12", routes.get(0).getId().getId(), stops.get(0).getId());
-        if (bibbula == null) option(message);
+        TimeTable timeTable = Database.getAutobusTimetable(message.getText(), true);
+        if (timeTable == null)
+            option(message);
         else
-            sendMessageDefault(message, keyboardAutobus(message.getChatId(), Database.getAutbusRoute()), textAutobus(bibbula));*/
+            sendMessageDefault(message, getInlineKeyboard(timeTable.getTimes().size(), "RITORNO"), textAutobus(message.getText(), timeTable, 0));
     }
 
     private void trains(Message message) throws TelegramApiException, MobilityServiceException {

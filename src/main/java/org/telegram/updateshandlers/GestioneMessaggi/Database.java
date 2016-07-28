@@ -3,11 +3,14 @@ package org.telegram.updateshandlers.GestioneMessaggi;
 import eu.trentorise.smartcampus.mobilityservice.MobilityDataService;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import eu.trentorise.smartcampus.mobilityservice.model.TaxiContact;
+import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.*;
 import org.telegram.telegrambots.api.objects.Location;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Database {
 
@@ -62,7 +65,27 @@ public class Database {
     // region TODO
 
     public static List<Route> getAutbusRoute() throws SecurityException, MobilityServiceException {
-        return autobus = dataService.getRoutes(AUTOBUS_ID, null);
+
+        autobus = dataService.getRoutes(AUTOBUS_ID, null);
+
+        Map<String, String> routeSymId;
+        {
+            routeSymId = new HashMap<String, String>();
+            routeSymId.put("_A", "%20AC");  // TODO ERROR, tried '%20', '%2520', '% ', '_'
+            routeSymId.put("_B", "%20BC");  // TODO ERROR, tried '%20', '%2520', '% ', '_'
+            routeSymId.put("NPA", "NPC");
+            routeSymId.put("02", "02C");
+            routeSymId.put("1A", "01A");
+            routeSymId.put("1R", "01R");
+            routeSymId.put("FUTSA", "FunA");
+            routeSymId.put("FUTSR", "FunR");
+        }
+
+        for (Route route : autobus)
+            if (routeSymId.containsKey(route.getId().getId()))
+                route.getId().setId(routeSymId.get(route.getId().getId()));
+
+        return autobus;
     }
 
     public static List<Route> getTrainsRoute() throws SecurityException, MobilityServiceException {
@@ -150,12 +173,28 @@ public class Database {
         return null;
     }
 
-    public static void getAutobusTimetable() throws MobilityServiceException {
-        List<Route> routes = dataService.getRoutes(AUTOBUS_ID, null);
-        List<Stop> stops = dataService.getStops(AUTOBUS_ID, routes.get(0).getId().getId(), null);
-        List<StopTime> times = dataService.getStopTimes(AUTOBUS_ID, routes.get(0).getId().getId(), stops.get(0).getId(), null);
+    public static TimeTable getAutobusTimetable(String routeId, Boolean isAndata) throws MobilityServiceException {
+        routeId = getRouteId(routeId, isAndata);
 
-        System.out.println(times.toString());
+        if (routeId == null)
+            return null;
+        else {
+            System.out.println(routeId);
+            return dataService.getTimeTable(AUTOBUS_ID, routeId, System.currentTimeMillis(), null);
+        }
+    }
+
+    private static String getRouteId(String routeId, Boolean isAndata) {
+        for (Route route : autobus) {
+            if (route.getRouteShortName().equals(routeId))
+                if (route.getId().getId().endsWith("C"))
+                    return route.getId().getId();
+                else if (isAndata && route.getId().getId().endsWith("A"))
+                    return route.getId().getId();
+                else if (!isAndata && route.getId().getId().endsWith("R"))
+                    return route.getId().getId();
+        }
+        return null;
     }
 
     // endregion TODO

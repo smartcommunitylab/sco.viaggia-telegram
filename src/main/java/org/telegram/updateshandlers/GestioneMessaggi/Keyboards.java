@@ -3,7 +3,9 @@ package org.telegram.updateshandlers.GestioneMessaggi;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
 import org.apache.commons.lang.math.NumberUtils;
+import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 
@@ -152,21 +154,22 @@ public class Keyboards {
     }
 
     // region INLINE KEYBOARD
-    /*
-    public static InlineKeyboardMarkup getInlineKeyboard() {
+    public static InlineKeyboardMarkup getInlineKeyboard(int from, String text) {
         InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup();
-
         List<List<InlineKeyboardButton>> inlineKeyboard = new ArrayList<>();
-        List<InlineKeyboardButton> keyboard1 = new ArrayList<>();
-        keyboard1.add(new InlineKeyboardButton().setText("|<").setCallbackData("first"));
-        keyboard1.add(new InlineKeyboardButton().setText("<").setCallbackData("before"));
-        keyboard1.add(new InlineKeyboardButton().setText("•").setCallbackData("now"));
-        keyboard1.add(new InlineKeyboardButton().setText(">").setCallbackData("after"));
-        keyboard1.add(new InlineKeyboardButton().setText(">|").setCallbackData("last"));
-        inlineKeyboard.add(keyboard1);
 
+        List<InlineKeyboardButton> keyboardRow1 = new ArrayList<>();
+        for (int i = from; i < from + 5; i++) {
+            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(i)).setCallbackData(Integer.toString(i)));
+        }
+
+        List<InlineKeyboardButton> keyboardRow2 = new ArrayList<>();
+        keyboardRow2.add(new InlineKeyboardButton().setText(text).setCallbackData(text));
+
+        inlineKeyboard.add(keyboardRow1);
+        inlineKeyboard.add(keyboardRow2);
         replyKeyboardMarkup.setKeyboard(inlineKeyboard);
         return replyKeyboardMarkup;
-    }*/
+    }
     // endregion INLINE KEYBOARD
 }

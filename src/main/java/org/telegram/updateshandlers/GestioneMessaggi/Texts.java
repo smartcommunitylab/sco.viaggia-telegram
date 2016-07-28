@@ -1,10 +1,9 @@
 package org.telegram.updateshandlers.GestioneMessaggi;
 
 import eu.trentorise.smartcampus.mobilityservice.model.TaxiContact;
-import eu.trentorise.smartcampus.mobilityservice.model.TripData;
+import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Stop;
-import org.apache.commons.lang.time.DurationFormatUtils;
 
 import java.util.List;
 
@@ -239,11 +238,15 @@ public class Texts {
         }
     }
 
-    public static String textAutobus(List<TripData> tripDatas) {
-        String text = "*AUTOBUS*";
-        for (TripData el : tripDatas) {
-            text += "\n" + el.getRouteName() + " " + DurationFormatUtils.formatDurationHMS(el.getTime());
-        }
+    public static String textAutobus(String autobusId, TimeTable timeTable, int index) {
+        String text = "*AUTOBUS " + autobusId + "*\n";
+
+        List<String> stops = timeTable.getStops();
+        List<List<String>> allTimes = timeTable.getTimes();
+
+        for (String time : allTimes.get(index))
+            if (!time.isEmpty())
+                text += "`" + time + "` - " + stops.get(allTimes.get(0).indexOf(time)) + "\n";
 
         return text;
     }
