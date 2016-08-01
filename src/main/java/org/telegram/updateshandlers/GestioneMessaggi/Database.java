@@ -4,13 +4,11 @@ import eu.trentorise.smartcampus.mobilityservice.MobilityDataService;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import eu.trentorise.smartcampus.mobilityservice.model.TaxiContact;
 import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.*;
+import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
+import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
 import org.telegram.telegrambots.api.objects.Location;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Database {
 
@@ -28,6 +26,12 @@ public class Database {
     private static List<Route> trains_TB = new ArrayList<>();
     private static List<Route> trains = new ArrayList<>();
     private static MobilityDataService dataService = new MobilityDataService(SERVER_URL);
+
+    // TODO List of errors in Autobus List:
+    // TODO - A, B   : don't know how to call them via getTimeTable(...)
+    // TODO - C      : always return a empty TimeTable
+    // TODO - 1, 14R : List<Stops>.size() != List<Times>.size()
+    // TODO - FuR    : doesn't appear in List<Route>
 
     private static String capitalize(String s) {
         String text = "";
@@ -61,8 +65,6 @@ public class Database {
                 near.add(el);
         return near;
     }
-
-    // region TODO
 
     public static List<Route> getAutbusRoute() throws SecurityException, MobilityServiceException {
 
@@ -123,68 +125,25 @@ public class Database {
         return trains;
     }
 
-    public static List<Stop> getStopAutobus(String autobusID) throws SecurityException, MobilityServiceException {
-        Id id = stopAutobusId(autobusID);
-        if (id == null) System.err.println("NULL, mi spiace... Ritenta, sarai piu fortunato");
-        return id == null ? null : dataService.getStops(AUTOBUS_ID, id.getId(), null);
+    public static TimeTable getAutobusTimetable(String routeId) throws MobilityServiceException {
+        System.out.println(routeId);
+        return dataService.getTimeTable(AUTOBUS_ID, routeId, System.currentTimeMillis(), null);
     }
 
-    public static List<Stop> getStopTrain(String trainID) throws SecurityException, MobilityServiceException {
-        Id id = stopTrainID(trainID);
-        String agencyID = trainAgencyId(trainID);
-
-        return id == null || agencyID == null ? null : dataService.getStops(agencyID, id.getId(), null);
-
+    public static TimeTable getTrainTimetable(String routeId) throws MobilityServiceException {
+        System.out.println(routeId);
+        return dataService.getTimeTable(getTrainAgencyId(routeId), routeId, System.currentTimeMillis(), null);
     }
 
-    public static List<StopTime> getNextTrips(String agencyId, String routeId, String stopId) throws MobilityServiceException {
-        return dataService.getStopTimes(agencyId, routeId, stopId, null);
+    public static Boolean hasReturn(String routeId) {
+        for (Route route : autobus)
+            if (route.getRouteShortName().equals(routeId) && (route.getId().getId().endsWith("A") || route.getId().getId().endsWith("R")))
+                return true;
+        return false;
     }
 
-    private static Id stopAutobusId(String autobusID) {
-        for (Route r : autobus)
-            if (r.getRouteShortName().equals(autobusID))
-                return r.getId();
-
-        return null;
-    }
-
-    private static Id stopTrainID(String trainID) {
-        for (Route r : trains)
-            if (r.getRouteLongName().equals(trainID))
-                return r.getId();
-
-        return null;
-    }
-
-    private static String trainAgencyId(String autobusID) {
-        for (Route r : trains_BV)
-            if (r.getRouteLongName().equals(autobusID))
-                return TRAINS_ID_BV;
-
-        for (Route r : trains_TB)
-            if (r.getRouteLongName().equals(autobusID))
-                return TRAINS_ID_TB;
-
-        for (Route r : trains_TM)
-            if (r.getRouteLongName().equals(autobusID))
-                return TRAINS_ID_TM;
-
-        return null;
-    }
-
-    public static TimeTable getAutobusTimetable(String routeId, Boolean isAndata) throws MobilityServiceException {
-        routeId = getRouteId(routeId, isAndata);
-
-        if (routeId == null)
-            return null;
-        else {
-            System.out.println(routeId);
-            return dataService.getTimeTable(AUTOBUS_ID, routeId, System.currentTimeMillis(), null);
-        }
-    }
-
-    private static String getRouteId(String routeId, Boolean isAndata) {
+    public static String getAutobusRouteId(String routeId, Boolean isAndata) throws MobilityServiceException {
+        autobus = getAutbusRoute();
         for (Route route : autobus) {
             if (route.getRouteShortName().equals(routeId))
                 if (route.getId().getId().endsWith("C"))
@@ -197,6 +156,48 @@ public class Database {
         return null;
     }
 
-    // endregion TODO
+    public static String getTrainRouteId(String routeId) {
+        for (Route route : trains)
+            if (route.getRouteLongName().equals(routeId))
+                return route.getId().getId();
+        return null;
+    }
+
+    public static String getTrainAgencyId(String trainId) {
+        for (Route r : trains_BV)
+            if (r.getId().getId().equals(trainId))
+                return TRAINS_ID_BV;
+
+        for (Route r : trains_TB)
+            if (r.getId().getId().equals(trainId))
+                return TRAINS_ID_TB;
+
+        for (Route r : trains_TM)
+            if (r.getId().getId().equals(trainId))
+                return TRAINS_ID_TM;
+
+        return null;
+    }
+
+    public static int getCurrentIndex(TimeTable timeTable) {
+        // TODO
+        int hours, minutes;
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(System.currentTimeMillis());
+        String string = "";
+        for (List<String> time : timeTable.getTimes()) {
+            for (int i = 0; string.isEmpty(); i++)
+                string = time.get(i);
+
+            hours = Integer.parseInt(string.substring(0, string.indexOf(':')));
+            minutes = Integer.parseInt(string.substring(string.indexOf(':') + 1));
+
+            if (hours == cal.get(Calendar.HOUR_OF_DAY) && minutes >= cal.get(Calendar.MINUTE))
+                return timeTable.getTimes().indexOf(time);
+            string = "";
+        }
+
+        return 0;
+    }
 
 }

@@ -8,6 +8,8 @@ public class Commands {
     public static final String STARTCOMMAND = "/start";
     public static final String LANGUAGECOMMAND = "/language";
     public static final String BACKCOMMAND = "BACK";
+    public static final String RETURNCOMMAND = "RITORNO";
+    public static final String ANDATACOMMAND = "ANDATA";
 
     // endregion commands
 

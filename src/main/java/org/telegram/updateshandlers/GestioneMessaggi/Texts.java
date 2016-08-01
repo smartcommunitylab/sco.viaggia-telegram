@@ -3,9 +3,11 @@ package org.telegram.updateshandlers.GestioneMessaggi;
 import eu.trentorise.smartcampus.mobilityservice.model.TaxiContact;
 import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.Stop;
 
 import java.util.List;
+
+import static org.telegram.updateshandlers.GestioneMessaggi.Commands.AUTOBUSCOMMAND;
+import static org.telegram.updateshandlers.GestioneMessaggi.Commands.TRAINSCOMMAND;
 
 public class Texts {
 
@@ -239,14 +241,14 @@ public class Texts {
     }
 
     public static String textAutobus(String autobusId, TimeTable timeTable, int index) {
-        String text = "*AUTOBUS " + autobusId + "*\n";
+        String text = "*" + AUTOBUSCOMMAND + " " + autobusId + "*\n";
 
         List<String> stops = timeTable.getStops();
-        List<List<String>> allTimes = timeTable.getTimes();
+        List<String> fasciaOrariaX = timeTable.getTimes().get(index);
 
-        for (String time : allTimes.get(index))
+        for (String time : fasciaOrariaX)
             if (!time.isEmpty())
-                text += "`" + time + "` - " + stops.get(allTimes.get(0).indexOf(time)) + "\n";
+                text += "`" + time + "` - " + stops.get(fasciaOrariaX.indexOf(time)) + "\n";
 
         return text;
     }
@@ -271,11 +273,16 @@ public class Texts {
         }
     }
 
-    public static String textTrain(List<Stop> stop) {
-        String text = "*TRAIN*";
-        for (Stop el : stop) {
-            text += "\n" + el.getName() + " " + el.getLongitude();
-        }
+    public static String textTrain(String trainId, TimeTable timeTable, int index) {
+        String text = "*" + TRAINSCOMMAND + " " + trainId + "*\n";
+
+        List<String> stops = timeTable.getStops();
+        List<List<String>> allTimes = timeTable.getTimes();
+
+        for (String time : allTimes.get(index))
+            if (!time.isEmpty())
+                text += "`" + time + "` - " + stops.get(allTimes.get(index).indexOf(time)) + "\n";
+
         return text;
     }
 
@@ -336,7 +343,7 @@ public class Texts {
     }
 
     public static String textBikeSharings(Parking parking) {
-        String slots = parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
+        String slots = parking.isMonitored() ? "`" + parking.getSlotsAvailable() + "` - Slots available" : "`" + parking.getSlotsTotal() + "` - Total slots";
         return "*Bike sharing " + parking.getName() + "*\n" + parking.getDescription() + "\n" + slots;
     }
 

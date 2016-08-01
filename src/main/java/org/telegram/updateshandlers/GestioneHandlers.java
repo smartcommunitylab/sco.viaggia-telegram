@@ -3,7 +3,6 @@ package org.telegram.updateshandlers;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.Stop;
 import org.telegram.BotConfig;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -12,6 +11,7 @@ import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.updateshandlers.GestioneMessaggi.*;
@@ -44,12 +44,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
                 else if (message.hasLocation())
                     handleIncomingPositionMessage(message);
             } else if (update.getCallbackQuery() != null) {
-                CallbackQuery cbq = update.getCallbackQuery();
-                EditMessageText prova = new EditMessageText();
-                prova.setMessageId(update.getCallbackQuery().getMessage().getMessageId());
-                prova.setChatId(update.getCallbackQuery().getMessage().getChatId().toString());
-                prova.setReplyMarkup(getInlineKeyboard());
-                editMessageText(prova);
+                handleIncomingCallbackQuery(update.getCallbackQuery());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -195,21 +190,95 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         }
     }
 
+    private void handleIncomingCallbackQuery(CallbackQuery cbq) throws TelegramApiException, MobilityServiceException {
+        Message message = cbq.getMessage();
+
+        TimeTable timeTable;
+        String messageText = "";
+        InlineKeyboardMarkup inlineKeyboardMarkup = null;
+
+        if (message.getText().startsWith(AUTOBUSCOMMAND)) {
+            String autobusId = message.getText().substring(AUTOBUSCOMMAND.length() + 1, message.getText().indexOf("\n"));
+            System.out.println(autobusId);
+            if (cbq.getData().equals(RETURNCOMMAND)) {
+                autobusId = autobusId.replace('A', 'R');
+                timeTable = Database.getAutobusTimetable(autobusId);
+                int index = Database.getCurrentIndex(timeTable);
+                messageText = textAutobus(autobusId, timeTable, index);
+                inlineKeyboardMarkup = inlineKeyboard(index, timeTable.getTimes().size() - 1, ANDATACOMMAND);
+            } else if (cbq.getData().equals(ANDATACOMMAND)) {
+                autobusId = autobusId.replace('R', 'A');
+                timeTable = Database.getAutobusTimetable(autobusId);
+                int index = Database.getCurrentIndex(timeTable);
+                messageText = textAutobus(autobusId, timeTable, index);
+                inlineKeyboardMarkup = inlineKeyboard(index, timeTable.getTimes().size() - 1, RETURNCOMMAND);
+            } else {
+
+                int choosed = Integer.parseInt(cbq.getData());
+
+                if (autobusId.endsWith("A")) {
+                    timeTable = Database.getAutobusTimetable(autobusId);
+                    messageText = textAutobus(autobusId, timeTable, Integer.parseInt(cbq.getData()));
+                    inlineKeyboardMarkup = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, RETURNCOMMAND);
+                } else if (autobusId.endsWith("R")) {
+                    timeTable = Database.getAutobusTimetable(autobusId);
+                    messageText = textAutobus(autobusId, timeTable, Integer.parseInt(cbq.getData()));
+                    inlineKeyboardMarkup = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, ANDATACOMMAND);
+                } else if (autobusId.endsWith("C")) {
+                    timeTable = Database.getAutobusTimetable(autobusId);
+                    messageText = textAutobus(autobusId, timeTable, Integer.parseInt(cbq.getData()));
+                    inlineKeyboardMarkup = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, null);
+                }
+
+            }
+        } else if (message.getText().startsWith(TRAINSCOMMAND)) {
+            int choosed = Integer.parseInt(cbq.getData());
+            String trainId = message.getText().substring(TRAINSCOMMAND.length() + 1, message.getText().indexOf("\n"));
+            timeTable = Database.getTrainTimetable(trainId);
+            messageText = textTrain(trainId, timeTable, Integer.parseInt(cbq.getData()));
+            inlineKeyboardMarkup = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, null);
+            System.out.println(trainId);
+        }
+
+        EditMessageText edit = new EditMessageText();
+        edit.enableMarkdown(true);
+        edit.setMessageId(message.getMessageId());
+        edit.setChatId(message.getChatId().toString());
+        edit.setText(messageText);
+        edit.setReplyMarkup(inlineKeyboardMarkup);
+        editMessageText(edit);
+
+    }
+
+
     // region TODO voids
 
     private void autobus(Message message) throws TelegramApiException, MobilityServiceException {
-        TimeTable timeTable = Database.getAutobusTimetable(message.getText(), true);
-        if (timeTable == null)
+        String routeId = Database.getAutobusRouteId(message.getText(), true);
+
+        if (routeId == null)
             option(message);
-        else
-            sendMessageDefault(message, getInlineKeyboard(timeTable.getTimes().size(), "RITORNO"), textAutobus(message.getText(), timeTable, 0));
+        else {
+            TimeTable timeTable = Database.getAutobusTimetable(routeId);
+            int index = Database.getCurrentIndex(timeTable);
+
+            if (Database.hasReturn(message.getText()))
+                sendMessageDefault(message, inlineKeyboard(index, timeTable.getTimes().size() - 1, RETURNCOMMAND), textAutobus(routeId, timeTable, index));
+            else
+                sendMessageDefault(message, inlineKeyboard(index, timeTable.getTimes().size() - 1, null), textAutobus(routeId, timeTable, index));
+        }
     }
 
     private void trains(Message message) throws TelegramApiException, MobilityServiceException {
-        List<Stop> bibbula = Database.getStopTrain(message.getText());
-        if (bibbula == null) option(message);
-        else
-            sendMessageDefault(message, keyboardTrains(message.getChatId(), Database.getTrainsRoute()), textTrain(bibbula));
+        String routeId = Database.getTrainRouteId(message.getText());
+
+        if (routeId == null) {
+            option(message);
+        } else {
+            TimeTable timeTable = Database.getTrainTimetable(routeId);
+            int index = Database.getCurrentIndex(timeTable);
+            sendMessageDefault(message, inlineKeyboard(index, timeTable.getTimes().size() - 1, null), textTrain(routeId, timeTable, index));
+        }
     }
 
     // endregion TODO voids
