@@ -180,7 +180,6 @@ public class Database {
     }
 
     public static int getCurrentIndex(TimeTable timeTable) {
-        // TODO
         int hours, minutes;
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(System.currentTimeMillis());
@@ -192,7 +191,7 @@ public class Database {
             hours = Integer.parseInt(string.substring(0, string.indexOf(':')));
             minutes = Integer.parseInt(string.substring(string.indexOf(':') + 1));
 
-            if (hours == cal.get(Calendar.HOUR_OF_DAY) && minutes >= cal.get(Calendar.MINUTE))
+            if (hours >= cal.get(Calendar.HOUR_OF_DAY) || hours == cal.get(Calendar.HOUR_OF_DAY) && minutes >= cal.get(Calendar.MINUTE))
                 return timeTable.getTimes().indexOf(time);
             string = "";
         }

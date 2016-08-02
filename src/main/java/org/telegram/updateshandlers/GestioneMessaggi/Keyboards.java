@@ -153,55 +153,55 @@ public class Keyboards {
         return replyKeyboardMarkup;
     }
 
-    public static InlineKeyboardMarkup inlineKeyboard(int choosed, int lastBtn, String text) {
+    public static InlineKeyboardMarkup inlineKeyboard(int choosed, int lastValue, String text) {
+        // BTNs must be an odd >= 5
+        final int BTNs = 5;
+        final int BTN_LAST = BTNs - 1;
+        final int BTN_PENULTIMATE = BTN_LAST - 1;
+        int MAGIC = 1;
+
+        for (int i = 5; i < BTNs; i += 2)
+            MAGIC++;
+
         InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> inlineKeyboard = new ArrayList<>();
 
         List<InlineKeyboardButton> keyboardRow1 = new ArrayList<>();
 
-        if (choosed == 0) {
-            keyboardRow1.add(new InlineKeyboardButton().setText("· 0 ·").setCallbackData("0"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("1").setCallbackData("1"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("2").setCallbackData("2"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("3 ›").setCallbackData("3"));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn) + " »").setCallbackData(Integer.toString(lastBtn)));
-        } else if (choosed == 1) {
-            keyboardRow1.add(new InlineKeyboardButton().setText("0").setCallbackData("0"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("· 1 ·").setCallbackData("1"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("2").setCallbackData("2"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("3 ›").setCallbackData("3"));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn) + " »").setCallbackData(Integer.toString(lastBtn)));
-        } else if (choosed == 2) {
-            keyboardRow1.add(new InlineKeyboardButton().setText("0").setCallbackData("0"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("1").setCallbackData("1"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("· 2 ·").setCallbackData("2"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("3 ›").setCallbackData("3"));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn) + " »").setCallbackData(Integer.toString(lastBtn)));
-        } else if (choosed == lastBtn - 2) {
-            keyboardRow1.add(new InlineKeyboardButton().setText("« 0").setCallbackData("0"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("‹ " + Integer.toString(lastBtn - 3)).setCallbackData(Integer.toString(lastBtn - 3)));
-            keyboardRow1.add(new InlineKeyboardButton().setText("· " + Integer.toString(lastBtn - 2) + " ·").setCallbackData(Integer.toString(lastBtn - 2)));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn - 1)).setCallbackData(Integer.toString(lastBtn - 1)));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn)).setCallbackData(Integer.toString(lastBtn)));
-        } else if (choosed == lastBtn - 1) {
-            keyboardRow1.add(new InlineKeyboardButton().setText("« 0").setCallbackData("0"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("‹ " + Integer.toString(lastBtn - 3)).setCallbackData(Integer.toString(lastBtn - 3)));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn - 2)).setCallbackData(Integer.toString(lastBtn - 2)));
-            keyboardRow1.add(new InlineKeyboardButton().setText("· " + Integer.toString(lastBtn - 1) + " ·").setCallbackData(Integer.toString(lastBtn - 1)));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn)).setCallbackData(Integer.toString(lastBtn)));
-        } else if (choosed == lastBtn) {
-            keyboardRow1.add(new InlineKeyboardButton().setText("« 0").setCallbackData("0"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("‹ " + Integer.toString(lastBtn - 3)).setCallbackData(Integer.toString(lastBtn - 3)));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn - 2)).setCallbackData(Integer.toString(lastBtn - 2)));
-            keyboardRow1.add(new InlineKeyboardButton().setText(Integer.toString(lastBtn - 1)).setCallbackData(Integer.toString(lastBtn - 1)));
-            keyboardRow1.add(new InlineKeyboardButton().setText("· " + Integer.toString(lastBtn) + " ·").setCallbackData(Integer.toString(lastBtn)));
+        for (int i = 0; i < BTNs; i++)
+            keyboardRow1.add(new InlineKeyboardButton());
+
+        if (choosed <= BTN_PENULTIMATE - 1) {
+            // return 0 | 1 | 2 | 3 ›| 6 »
+            for (int i = 1; i < BTN_LAST; i++)
+                keyboardRow1.get(i).setText(Integer.toString(i)).setCallbackData(Integer.toString(i));
+
+            keyboardRow1.get(0).setText(Integer.toString(0)).setCallbackData(Integer.toString(0));
+            keyboardRow1.get(BTN_PENULTIMATE).setText(keyboardRow1.get(BTN_PENULTIMATE).getText() + " ›");
+            keyboardRow1.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(Integer.toString(lastValue));
+        } else if (choosed >= lastValue - (MAGIC + 2)) {
+            // return « 0 |‹ 3 | 4 | 5 | 6
+            for (int i = 1, value = lastValue - (MAGIC + 2); i < BTN_LAST; i++, value++)
+                keyboardRow1.get(i).setText(Integer.toString(value)).setCallbackData(Integer.toString(value));
+
+            keyboardRow1.get(0).setText("« " + Integer.toString(0)).setCallbackData(Integer.toString(0));
+            keyboardRow1.get(1).setText("‹ " + keyboardRow1.get(1).getText());
+            keyboardRow1.get(BTN_LAST).setText(Integer.toString(lastValue)).setCallbackData(Integer.toString(lastValue));
         } else {
-            keyboardRow1.add(new InlineKeyboardButton().setText("« 0").setCallbackData("0"));
-            keyboardRow1.add(new InlineKeyboardButton().setText("‹ " + (choosed - 1)).setCallbackData(Integer.toString(choosed - 1)));
-            keyboardRow1.add(new InlineKeyboardButton().setText("· " + choosed + " ·").setCallbackData(Integer.toString(choosed)));
-            keyboardRow1.add(new InlineKeyboardButton().setText((choosed + 1) + " ›").setCallbackData(Integer.toString(choosed + 1)));
-            keyboardRow1.add(new InlineKeyboardButton().setText(lastBtn + " »").setCallbackData(Integer.toString(lastBtn)));
+            // return « 0 |‹ 2 |· 3 ·| 4 ›| 6 »
+            for (int i = 1, value = choosed - MAGIC; i < BTN_LAST; i++, value++)
+                keyboardRow1.get(i).setText(Integer.toString(value)).setCallbackData(Integer.toString(value));
+
+            keyboardRow1.get(0).setText("« " + Integer.toString(0)).setCallbackData(Integer.toString(0));
+            keyboardRow1.get(1).setText("‹ " + keyboardRow1.get(1).getText());
+            keyboardRow1.get(BTN_PENULTIMATE).setText(keyboardRow1.get(BTN_PENULTIMATE).getText() + " ›");
+            keyboardRow1.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(Integer.toString(lastValue));
         }
+
+        for (InlineKeyboardButton btn : keyboardRow1)
+            if (btn.getText().equals(Integer.toString(choosed)))
+                btn.setText("· " + btn.getText() + " ·");
+
 
         inlineKeyboard.add(keyboardRow1);
         if (text != null) {
