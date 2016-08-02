@@ -6,8 +6,7 @@ import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 
 import java.util.List;
 
-import static org.telegram.updateshandlers.GestioneMessaggi.Commands.AUTOBUSCOMMAND;
-import static org.telegram.updateshandlers.GestioneMessaggi.Commands.TRAINSCOMMAND;
+import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
 
 public class Texts {
 
@@ -103,20 +102,38 @@ public class Texts {
         }
     }
 
-    public static String textOption(Language language) {
-        switch (language) {
-            case ITALIANO:
-                return "Scusa, cosa hai detto?";
-            case ENGLISH:
-                return "Sorry, what did you say?";
-            case ESPAÑOL:
-                return "disculpa, ¿que has dicho?";
-            default:
-                return "Impossible";
-        }
+    // endregion commands
+
+    // region utilities
+
+    private static String textTimetable(TimeTable timeTable, int index) {
+        String text = "";
+
+        List<String> stops = timeTable.getStops();
+        List<String> times = timeTable.getTimes().get(index);
+
+        for (String time : times)
+            if (!time.isEmpty())
+                text += "`" + time + "` - " + stops.get(times.indexOf(time)) + "\n";
+
+        return text;
     }
 
-    // endregion commands
+    private static String textSlots(Parking parking) {
+        return parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
+    }
+
+    private static String textNear(List<Parking> parkings, String command) {
+        String text = "*NEAR TO YOU*";
+        if (parkings.isEmpty())
+            text = "*NO " + command + " NEAR TO YOU*";
+        else
+            for (Parking park : parkings)
+                text += "\n" + park.getName() + " : " + park.getDescription();
+        return text;
+    }
+
+    // endregion utilities
 
     // region Menu.START
 
@@ -241,16 +258,7 @@ public class Texts {
     }
 
     public static String textAutobus(String autobusId, TimeTable timeTable, int index) {
-        String text = "*" + AUTOBUSCOMMAND + " " + autobusId + "*\n";
-
-        List<String> stops = timeTable.getStops();
-        List<String> fasciaOrariaX = timeTable.getTimes().get(index);
-
-        for (String time : fasciaOrariaX)
-            if (!time.isEmpty())
-                text += "`" + time + "` - " + stops.get(fasciaOrariaX.indexOf(time)) + "\n";
-
-        return text;
+        return "*" + AUTOBUSCOMMAND + " " + autobusId + "*\n" + textTimetable(timeTable, index);
     }
 
     // endregion Menu.AUTOBUS
@@ -274,16 +282,7 @@ public class Texts {
     }
 
     public static String textTrain(String trainId, TimeTable timeTable, int index) {
-        String text = "*" + TRAINSCOMMAND + " " + trainId + "*\n";
-
-        List<String> stops = timeTable.getStops();
-        List<List<String>> allTimes = timeTable.getTimes();
-
-        for (String time : allTimes.get(index))
-            if (!time.isEmpty())
-                text += "`" + time + "` - " + stops.get(allTimes.get(index).indexOf(time)) + "\n";
-
-        return text;
+        return "*" + TRAINSCOMMAND + " " + trainId + "*\n" + textTimetable(timeTable, index);
     }
 
 
@@ -308,18 +307,11 @@ public class Texts {
     }
 
     public static String textParking(Parking parking) {
-        String slots = parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
-        return "*Parking " + parking.getName() + "*\n" + parking.getDescription() + "\n" + slots;
+        return "*PARKING " + parking.getName() + "*\n" + parking.getDescription() + "\n" + textSlots(parking);
     }
 
     public static String textParkingsNear(List<Parking> parkings) {
-        String text = "*NEAR TO YOU*";
-        for (Parking el : parkings) {
-            text += "\n/" + el.getName() + " - " + el.getDescription();
-        }
-        if (parkings.isEmpty())
-            text = "*NO PARKINGS NEAR TO YOU*";
-        return text;
+        return textNear(parkings, PARKINGSCOMMAND);
     }
 
     // endregion Menu.PARKINGS
@@ -343,18 +335,12 @@ public class Texts {
     }
 
     public static String textBikeSharings(Parking parking) {
-        String slots = parking.isMonitored() ? "`" + parking.getSlotsAvailable() + "` - Slots available" : "`" + parking.getSlotsTotal() + "` - Total slots";
-        return "*Bike sharing " + parking.getName() + "*\n" + parking.getDescription() + "\n" + slots;
+        return "*Bike sharing " + parking.getName() + "*\n" + parking.getDescription() + "\n" + textSlots(parking);
     }
 
     public static String textBikeSharingsNear(List<Parking> parkings) {
-        String text = "*NEAR TO YOU*";
-        for (Parking el : parkings) {
-            text += "\n" + el.getName() + " - " + el.getDescription();
-        }
-        if (parkings.isEmpty())
-            text = "*NO BIKE SHARING NEAR TO YOU*";
-        return text;
+        return textNear(parkings, BIKESHARINGSCOMMAND);
+
     }
 
     // endregion Menu.BIKESHARINGS

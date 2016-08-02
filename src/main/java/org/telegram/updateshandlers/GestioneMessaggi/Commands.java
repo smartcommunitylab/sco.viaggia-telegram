@@ -27,7 +27,7 @@ public class Commands {
     public static final String AUTOBUSCOMMAND = "AUTOBUS";
     public static final String TRAINSCOMMAND = "TRAINS";
     public static final String PARKINGSCOMMAND = "PARKINGS";
-    public static final String BIKESHARINGSCOMMAND = "BIKESHARINGS";
+    public static final String BIKESHARINGSCOMMAND = "BIKE SHARINGS";
 
     // endregion main menu
 }

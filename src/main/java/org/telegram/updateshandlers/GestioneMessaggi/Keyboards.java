@@ -160,6 +160,7 @@ public class Keyboards {
         final int BTN_PENULTIMATE = BTN_LAST - 1;
         int MAGIC = 1;
 
+        // useful if BTNs change value
         for (int i = 5; i < BTNs; i += 2)
             MAGIC++;
 
@@ -179,9 +180,9 @@ public class Keyboards {
             keyboardRow1.get(0).setText(Integer.toString(0)).setCallbackData(Integer.toString(0));
             keyboardRow1.get(BTN_PENULTIMATE).setText(keyboardRow1.get(BTN_PENULTIMATE).getText() + " ›");
             keyboardRow1.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(Integer.toString(lastValue));
-        } else if (choosed >= lastValue - (MAGIC + 2)) {
+        } else if (choosed >= lastValue - (2 * MAGIC)) {
             // return « 0 |‹ 3 | 4 | 5 | 6
-            for (int i = 1, value = lastValue - (MAGIC + 2); i < BTN_LAST; i++, value++)
+            for (int i = 1, value = lastValue - (2 * MAGIC) - 1; i < BTN_LAST; i++, value++)
                 keyboardRow1.get(i).setText(Integer.toString(value)).setCallbackData(Integer.toString(value));
 
             keyboardRow1.get(0).setText("« " + Integer.toString(0)).setCallbackData(Integer.toString(0));
