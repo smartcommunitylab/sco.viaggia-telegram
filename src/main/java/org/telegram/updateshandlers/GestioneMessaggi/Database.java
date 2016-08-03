@@ -10,6 +10,9 @@ import org.telegram.telegrambots.api.objects.Location;
 
 import java.util.*;
 
+/**
+ * Created by gekoramy
+ */
 public class Database {
 
     private static final String AUTOBUS_ID = "12";
@@ -28,10 +31,9 @@ public class Database {
     private static MobilityDataService dataService = new MobilityDataService(SERVER_URL);
 
     // TODO List of errors in Autobus List:
-    // TODO - A, B   : don't know how to call them via getTimeTable(...)
-    // TODO - C      : always return a empty TimeTable
-    // TODO - 1, 14R : List<Stops>.size() != List<Times>.size()
-    // TODO - FuR    : doesn't appear in List<Route>
+    // TODO - A, B, C   : always return a empty TimeTable
+    // TODO - 1, 14R    : List<Stops>.size() != List<Times>.size()
+    // TODO - FuR       : doesn't appear in List<Route>
 
     private static String capitalize(String s) {
         String text = "";
@@ -72,9 +74,9 @@ public class Database {
 
         Map<String, String> routeSymId;
         {
-            routeSymId = new HashMap<String, String>();
-            routeSymId.put("_A", "%20AC");  // TODO ERROR, tried '%20', '%2520', '% ', '_'
-            routeSymId.put("_B", "%20BC");  // TODO ERROR, tried '%20', '%2520', '% ', '_'
+            routeSymId = new HashMap<>();
+            routeSymId.put("_A", "%20Ac");  // ERROR, tried : '%20', '%2520', '% ', '_' + 'AC', 'Ac'
+            routeSymId.put("_B", "%20Bc");  // ERROR, tried : '%20', '%2520', '% ', '_' + 'AC', 'Ac'
             routeSymId.put("NPA", "NPC");
             routeSymId.put("02", "02C");
             routeSymId.put("1A", "01A");
@@ -163,7 +165,7 @@ public class Database {
         return null;
     }
 
-    public static String getTrainAgencyId(String trainId) {
+    private static String getTrainAgencyId(String trainId) {
         for (Route r : trains_BV)
             if (r.getId().getId().equals(trainId))
                 return TRAINS_ID_BV;

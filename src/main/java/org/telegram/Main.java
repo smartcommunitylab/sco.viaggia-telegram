@@ -4,6 +4,9 @@ import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.updateshandlers.GestioneHandlers;
 
+/**
+ * Created by gekoramy
+ */
 public class Main {
 
     public static void main(String[] args) {

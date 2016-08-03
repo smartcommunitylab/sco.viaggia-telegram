@@ -3,6 +3,7 @@ package org.telegram.updateshandlers;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
+import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
 import org.telegram.BotConfig;
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
@@ -24,6 +25,9 @@ import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
 import static org.telegram.updateshandlers.GestioneMessaggi.Keyboards.*;
 import static org.telegram.updateshandlers.GestioneMessaggi.Texts.*;
 
+/**
+ * Created by gekoramy
+ */
 public class GestioneHandlers extends TelegramLongPollingBot {
 
     @Override
@@ -53,6 +57,8 @@ public class GestioneHandlers extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
+    // region handlers
 
     private void handleIncomingTextMessage(Message message) throws TelegramApiException, MobilityServiceException {
         Long chatId = message.getChatId();
@@ -84,8 +90,8 @@ public class GestioneHandlers extends TelegramLongPollingBot {
                                 Current.setLanguage(chatId, Language.ENGLISH);
                                 sendMessageDefault(message, keyboardLanguage(chatId), textLanguageChange(Current.getLanguage(chatId)));
                                 break;
-                            case ESPAÑOL:
-                                Current.setLanguage(chatId, Language.ESPAÑOL);
+                            case ESPANOL:
+                                Current.setLanguage(chatId, Language.ESPANOL);
                                 sendMessageDefault(message, keyboardLanguage(chatId), textLanguageChange(Current.getLanguage(chatId)));
                                 break;
                         }
@@ -203,6 +209,117 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         }
     }
 
+    // endregion handlers
+
+    // region voids
+
+    private void trains(Message message) throws TelegramApiException, MobilityServiceException {
+        String routeId = Database.getTrainRouteId(message.getText());
+
+        if (routeId == null) {
+            error(message);
+        } else {
+            TimeTable timeTable = Database.getTrainTimetable(routeId);
+            int index = Database.getCurrentIndex(timeTable);
+            sendMessageDefault(message, inlineKeyboard(routeId, index, timeTable.getTimes().size() - 1), textTrain(routeId, timeTable, index));
+        }
+    }
+
+    // TODO
+
+    private void autobusEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
+
+        String routeId = cbq.getData().substring(0, cbq.getData().indexOf('_'));
+        String option = cbq.getData().substring(cbq.getData().indexOf('_') + 1, cbq.getData().lastIndexOf('_'));
+        int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('_') + 1));
+
+        Message message = cbq.getMessage();
+
+        String nameAutobus = "";
+        TimeTable timeTable = Database.getAutobusTimetable(routeId);
+        int now = Database.getCurrentIndex(timeTable);
+        String text;
+        InlineKeyboardMarkup keyboardMarkup;
+
+        switch (option) {
+            case RETURN:
+                routeId = routeId.replace('A', 'R');
+                break;
+
+            case ANDATA:
+                routeId = routeId.replace('R', 'A');
+                break;
+        }
+
+        for (Route route : Database.getAutbusRoute())
+            if (route.getId().getId().equals(routeId))
+                nameAutobus = route.getRouteLongName();
+
+        text = textAutobus(nameAutobus, timeTable, chosen);
+        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().get(0).size() - 1);
+
+        answerCallbackQuery(cbq, AUTOBUSCOMMAND + " " + nameAutobus);
+
+        if (!(option.equals(NOW) && now == chosen))
+            editMessageDefault(message, keyboardMarkup, text);
+    }
+
+    // TODO
+
+    private void trainsEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
+
+        String routeId = cbq.getData().substring(0, cbq.getData().indexOf('_'));
+        String option = cbq.getData().substring(cbq.getData().indexOf('_') + 1, cbq.getData().lastIndexOf('_'));
+        int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('_') + 1));
+
+        Message message = cbq.getMessage();
+
+        String nameTrain = "";
+        TimeTable timeTable = Database.getAutobusTimetable(routeId);
+        int now = Database.getCurrentIndex(timeTable);
+        String text;
+        InlineKeyboardMarkup keyboardMarkup;
+
+        for (Route route : Database.getTrainsRoute())
+            if (route.getId().getId().equals(routeId))
+                nameTrain = route.getRouteLongName();
+
+        text = textTrain(nameTrain, timeTable, chosen);
+        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().get(0).size() - 1);
+
+        answerCallbackQuery(cbq, TRAINSCOMMAND + " " + nameTrain);
+
+        if (!(option.equals(NOW) && now == chosen))
+            editMessageDefault(message, keyboardMarkup, text);
+    }
+
+    private void zone(Message message, Menu menu) throws TelegramApiException, MobilityServiceException {
+        boolean flag = false;
+        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharing() : new ArrayList<>();
+
+        String text = message.getText();
+
+        for (Parking p : parkings)
+            if (p.getName().equals(text)) {
+                switch (menu) {
+                    case PARKINGS:
+                        sendMessageDefault(message, keyboardParkings(message.getChatId(), parkings), textParking(p));
+                        break;
+                    case BIKESHARINGS:
+                        sendMessageDefault(message, keyboardBikeSharings(message.getChatId(), parkings), textBikeSharings(p));
+                        break;
+                }
+                sendVenueDefault(message, (float) p.getPosition()[0], (float) p.getPosition()[1]);
+                flag = true;
+            }
+
+        if (!flag) error(message);
+    }
+
+    private void error(Message message) throws TelegramApiException {
+        sendMessageDefaultWithReply(message, null, Texts.textError(Current.getLanguage(message.getChatId())));
+    }
+
     private void autobus(Message message) throws TelegramApiException, MobilityServiceException {
         String routeId = Database.getAutobusRouteId(message.getText(), true);
 
@@ -213,82 +330,24 @@ public class GestioneHandlers extends TelegramLongPollingBot {
             int index = Database.getCurrentIndex(timeTable);
 
             if (Database.hasReturn(message.getText()))
-                sendMessageDefault(message, inlineKeyboard(index, timeTable.getTimes().size() - 1, RETURNCOMMAND), textAutobus(routeId, timeTable, index));
+                sendMessageDefault(message, inlineKeyboard(routeId, index, timeTable.getTimes().size() - 1), textAutobus(routeId, timeTable, index));
             else
-                sendMessageDefault(message, inlineKeyboard(index, timeTable.getTimes().size() - 1, null), textAutobus(routeId, timeTable, index));
+                sendMessageDefault(message, inlineKeyboard(routeId, index, timeTable.getTimes().size() - 1), textAutobus(routeId, timeTable, index));
         }
     }
 
-    private void trains(Message message) throws TelegramApiException, MobilityServiceException {
-        String routeId = Database.getTrainRouteId(message.getText());
-
-        if (routeId == null) {
-            error(message);
-        } else {
-            TimeTable timeTable = Database.getTrainTimetable(routeId);
-            int index = Database.getCurrentIndex(timeTable);
-            sendMessageDefault(message, inlineKeyboard(index, timeTable.getTimes().size() - 1, null), textTrain(routeId, timeTable, index));
-        }
-    }
-
-    private void autobusEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
-        Message message = cbq.getMessage();
-        String autobusId = message.getText().substring(AUTOBUSCOMMAND.length() + 1, message.getText().indexOf("\n"));
-        String text;
-        InlineKeyboardMarkup keyboard = null;
-
-        TimeTable timeTable = Database.getAutobusTimetable(autobusId);
-        int index = Database.getCurrentIndex(timeTable);
-
-        if (cbq.getData().equals(RETURNCOMMAND) || cbq.getData().equals(ANDATACOMMAND)) {
-            if (cbq.getData().equals(RETURNCOMMAND)) {
-                autobusId = autobusId.replace('A', 'R');
-                keyboard = inlineKeyboard(index, timeTable.getTimes().size() - 1, ANDATACOMMAND);
-            }
-
-            if (cbq.getData().equals(ANDATACOMMAND)) {
-                autobusId = autobusId.replace('R', 'A');
-                keyboard = inlineKeyboard(index, timeTable.getTimes().size() - 1, RETURNCOMMAND);
-            }
-
-            text = textAutobus(autobusId, timeTable, index);
-        } else {
-            int choosed = Integer.parseInt(cbq.getData());
-            timeTable = Database.getAutobusTimetable(autobusId);
-            text = textAutobus(autobusId, timeTable, choosed);
-
-            if (autobusId.endsWith("A"))
-                keyboard = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, RETURNCOMMAND);
-            else if (autobusId.endsWith("R"))
-                keyboard = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, ANDATACOMMAND);
-            else if (autobusId.endsWith("C"))
-                keyboard = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, null);
-        }
-
-        editMessageDefault(message, keyboard, text, cbq, TRAINSCOMMAND + " " + autobusId);
-    }
-
-    private void trainsEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
-        Message message = cbq.getMessage();
-
-        int choosed = Integer.parseInt(cbq.getData());
-        String trainId = message.getText().substring(TRAINSCOMMAND.length() + 1, message.getText().indexOf("\n"));
-        TimeTable timeTable = Database.getTrainTimetable(trainId);
-
-        String text = textTrain(trainId, timeTable, Integer.parseInt(cbq.getData()));
-        InlineKeyboardMarkup keyboard = inlineKeyboard(choosed, timeTable.getTimes().size() - 1, null);
-
-        editMessageDefault(message, keyboard, text, cbq, TRAINSCOMMAND + " " + trainId);
-    }
+    // endregion voids
 
     // region utilities
 
-    private void editMessageDefault(Message message, InlineKeyboardMarkup keyboard, String messageText, CallbackQuery cbq, String aCbqText) throws TelegramApiException {
+    private void answerCallbackQuery(CallbackQuery cbq, String aCbqText) throws TelegramApiException {
         AnswerCallbackQuery aCbq = new AnswerCallbackQuery();
         aCbq.setCallbackQueryId(cbq.getId());
         aCbq.setText(aCbqText);
         answerCallbackQuery(aCbq);
+    }
 
+    private void editMessageDefault(Message message, InlineKeyboardMarkup keyboard, String messageText) throws TelegramApiException {
         EditMessageText edit = new EditMessageText();
         edit.enableMarkdown(true);
         edit.setMessageId(message.getMessageId());
@@ -325,33 +384,6 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         sendVenue.setLongitude(longitude);
 
         sendVenue(sendVenue);
-    }
-
-    private void zone(Message message, Menu menu) throws TelegramApiException, MobilityServiceException {
-        boolean flag = false;
-        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharing() : new ArrayList<>();
-
-        String text = message.getText();
-
-        for (Parking p : parkings)
-            if (p.getName().equals(text)) {
-                switch (menu) {
-                    case PARKINGS:
-                        sendMessageDefault(message, keyboardParkings(message.getChatId(), parkings), textParking(p));
-                        break;
-                    case BIKESHARINGS:
-                        sendMessageDefault(message, keyboardBikeSharings(message.getChatId(), parkings), textBikeSharings(p));
-                        break;
-                }
-                sendVenueDefault(message, (float) p.getPosition()[0], (float) p.getPosition()[1]);
-                flag = true;
-            }
-
-        if (!flag) error(message);
-    }
-
-    private void error(Message message) throws TelegramApiException {
-        sendMessageDefaultWithReply(message, null, Texts.textError(Current.getLanguage(message.getChatId())));
     }
 
     // endregion utilities

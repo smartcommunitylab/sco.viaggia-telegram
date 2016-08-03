@@ -8,7 +8,41 @@ import java.util.List;
 
 import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
 
+/**
+ * Created by gekoramy
+ */
 public class Texts {
+
+    // region utilities
+
+    private static String textTimetable(TimeTable timeTable, int index) {
+        String text = "";
+
+        List<String> stops = timeTable.getStops();
+        List<String> times = timeTable.getTimes().get(index);
+
+        for (String time : times)
+            if (!time.isEmpty())
+                text += "`" + time + "` - " + stops.get(times.indexOf(time)) + "\n";
+
+        return text;
+    }
+
+    private static String textSlots(Parking parking) {
+        return parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
+    }
+
+    private static String textNear(List<Parking> parkings, String command) {
+        String text = "*NEAR TO YOU*";
+        if (parkings.isEmpty())
+            text = "*NO " + command + " NEAR TO YOU*";
+        else
+            for (Parking park : parkings)
+                text += "\n" + park.getName() + " : " + park.getDescription();
+        return text;
+    }
+
+    // endregion utilities
 
     // region commands
 
@@ -18,7 +52,7 @@ public class Texts {
                 return "Cambia lingua";
             case ENGLISH:
                 return "Change language";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Cambia idioma";
             default:
                 return "Impossible";
@@ -65,7 +99,7 @@ public class Texts {
                         "/stop: stop the bot, re-starts with the start command\n" +
                         "/language: change bot's language settings\n" +
                         "/help: returns tips";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "*Bienvenido en @ViaggiaTrentoBot*\n" +
                         "El bot que soporta la movilización  urbana sostenible de Trento\n" +
                         "• Podrás monitorear tus viajes y ser informado sobre eventuales retrasos\n" +
@@ -95,7 +129,7 @@ public class Texts {
                 return "Alquanto inaspettato...";
             case ENGLISH:
                 return "Quite unexpected...";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Bastante inesperado";
             default:
                 return "Impossible";
@@ -103,37 +137,6 @@ public class Texts {
     }
 
     // endregion commands
-
-    // region utilities
-
-    private static String textTimetable(TimeTable timeTable, int index) {
-        String text = "";
-
-        List<String> stops = timeTable.getStops();
-        List<String> times = timeTable.getTimes().get(index);
-
-        for (String time : times)
-            if (!time.isEmpty())
-                text += "`" + time + "` - " + stops.get(times.indexOf(time)) + "\n";
-
-        return text;
-    }
-
-    private static String textSlots(Parking parking) {
-        return parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
-    }
-
-    private static String textNear(List<Parking> parkings, String command) {
-        String text = "*NEAR TO YOU*";
-        if (parkings.isEmpty())
-            text = "*NO " + command + " NEAR TO YOU*";
-        else
-            for (Parking park : parkings)
-                text += "\n" + park.getName() + " : " + park.getDescription();
-        return text;
-    }
-
-    // endregion utilities
 
     // region Menu.START
 
@@ -147,7 +150,7 @@ public class Texts {
                 return "Dimmi cosa ti interessa sapere";
             case ENGLISH:
                 return "Tell me what you want to know";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Dime que quieres saber";
             default:
                 return "Impossible";
@@ -175,7 +178,7 @@ public class Texts {
                 return "Scegli la linea";
             case ENGLISH:
                 return "Choose the line";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Elige la linea";
             default:
                 return "Impossible";
@@ -188,7 +191,7 @@ public class Texts {
                 return "Scegli la linea";
             case ENGLISH:
                 return "Choose the line";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Elige la linea";
             default:
                 return "Impossible";
@@ -201,7 +204,7 @@ public class Texts {
                 return "Scegli il parcheggio, o invia la tua posizione";
             case ENGLISH:
                 return "Choose the parking, or send your location";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Elige el aparcamiento, o envia tu posición";
             default:
                 return "Impossible";
@@ -214,7 +217,7 @@ public class Texts {
                 return "Scegli il bike sharing desiderato, o invia la tua posizione";
             case ENGLISH:
                 return "Choose the bike sharing, or send your location";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Elige el bike sharing, o envia tu posición";
             default:
                 return "Impossible";
@@ -231,7 +234,7 @@ public class Texts {
                 return "Mi capisci ora?";
             case ENGLISH:
                 return "Do you understand me now?";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "¿Me entiendes ahora?";
             default:
                 return "Impossible";
@@ -250,7 +253,7 @@ public class Texts {
             case ENGLISH:
                 return "Select a line to view the timetable and the stops in your area.\n" +
                         "The bar allows to select a specific time slot";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Selecciona la linea deseada para conocer los horarios y la parada más cercanas.";
             default:
                 return "Impossible";
@@ -273,7 +276,7 @@ public class Texts {
             case ENGLISH:
                 return "Select a train to view its timetable and the stations in your area\n" +
                         "The bar allows to select a specific time slot";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Selecciona el tren deseado para conocer los horaros y las estaciones más cercanas\n" +
                         "La barra de abajo permite de mover la banda horaria";
             default:
@@ -298,7 +301,7 @@ public class Texts {
             case ENGLISH:
                 return "Select a parking to see if it is available and find its location.\n" +
                         "What's more, you can send your location to know near parkings";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Selecciona el aparcamiento deseado para conocer la disponibilidad y su posición\n" +
                         "Además podrás enviar tu posición para encontrar el aparcamiento más cercano";
             default:
@@ -326,7 +329,7 @@ public class Texts {
             case ENGLISH:
                 return "Select a bike sharing to see if it is available and find its location.\n" +
                         "What's more, you can send your location to know bike sharings";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Selecciona el bike sharing deseado para conocer la disponibilidad y su posición\n" +
                         "Además podrás enviar tu posición para encontrar el bike sharing más cercano ";
             default:

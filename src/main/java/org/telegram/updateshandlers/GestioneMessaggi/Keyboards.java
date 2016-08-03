@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
 
+/**
+ * Created by gekoramy
+ */
 public class Keyboards {
 
     // region utilities
@@ -58,7 +61,25 @@ public class Keyboards {
         return replyKeyboardMarkup;
     }
 
+    private static InlineKeyboardButton first(InlineKeyboardButton btn) {
+        return btn.setText("« " + btn.getText());
+    }
+
+    private static InlineKeyboardButton second(InlineKeyboardButton btn) {
+        return btn.setText("‹ " + btn.getText());
+    }
+
+    private static InlineKeyboardButton penultimate(InlineKeyboardButton btn) {
+        return btn.setText(btn.getText() + " ›");
+    }
+
+    private static InlineKeyboardButton last(InlineKeyboardButton btn) {
+        return btn.setText(btn.getText() + " »");
+    }
+
     // endregion utilities
+
+    // region keyboard
 
     public static ReplyKeyboardMarkup keyboardStart(long chatId) {
         ReplyKeyboardMarkup replyKeyboardMarkup = keyboard();
@@ -82,7 +103,7 @@ public class Keyboards {
 
         keyboard.add(keyboardRowButton(ITALIANO));
         keyboard.add(keyboardRowButton(ENGLISH));
-        keyboard.add(keyboardRowButton(ESPAÑOL));
+        keyboard.add(keyboardRowButton(ESPANOL));
 
         replyKeyboardMarkup.setKeyboard(keyboard);
 
@@ -153,9 +174,19 @@ public class Keyboards {
         return replyKeyboardMarkup;
     }
 
-    public static InlineKeyboardMarkup inlineKeyboard(int choosed, int lastValue, String text) {
+    // endregion keyboard
+
+    // region inlineKeyboard
+
+    public static InlineKeyboardMarkup inlineKeyboard(String id, int chosen, int lastValue) {
+        InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> inlineKeyboard = new ArrayList<>();
+
+        List<InlineKeyboardButton> indexes = new ArrayList<>();
+        // region indexes
+
         // BTNs must be an odd >= 5
-        final int BTNs = 5;
+        final int BTNs = 7;
         final int BTN_LAST = BTNs - 1;
         final int BTN_PENULTIMATE = BTN_LAST - 1;
         int MAGIC = 1;
@@ -164,53 +195,97 @@ public class Keyboards {
         for (int i = 5; i < BTNs; i += 2)
             MAGIC++;
 
-        InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> inlineKeyboard = new ArrayList<>();
-
-        List<InlineKeyboardButton> keyboardRow1 = new ArrayList<>();
-
         for (int i = 0; i < BTNs; i++)
-            keyboardRow1.add(new InlineKeyboardButton());
+            indexes.add(new InlineKeyboardButton());
 
-        if (choosed <= BTN_PENULTIMATE - 1) {
-            // return 0 | 1 | 2 | 3 ›| 6 »
-            for (int i = 1; i < BTN_LAST; i++)
-                keyboardRow1.get(i).setText(Integer.toString(i)).setCallbackData(Integer.toString(i));
-
-            keyboardRow1.get(0).setText(Integer.toString(0)).setCallbackData(Integer.toString(0));
-            keyboardRow1.get(BTN_PENULTIMATE).setText(keyboardRow1.get(BTN_PENULTIMATE).getText() + " ›");
-            keyboardRow1.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(Integer.toString(lastValue));
-        } else if (choosed >= lastValue - (2 * MAGIC)) {
-            // return « 0 |‹ 3 | 4 | 5 | 6
+        if (chosen <= BTN_PENULTIMATE - 1)
+            for (int i = 1, value = 1; i < BTN_LAST; i++, value++)
+                indexes.get(i).setText(Integer.toString(value));
+        else if (chosen >= lastValue - (2 * MAGIC))
             for (int i = 1, value = lastValue - (2 * MAGIC) - 1; i < BTN_LAST; i++, value++)
-                keyboardRow1.get(i).setText(Integer.toString(value)).setCallbackData(Integer.toString(value));
+                indexes.get(i).setText(Integer.toString(value));
+        else
+            for (int i = 1, value = chosen - MAGIC; i < BTN_LAST; i++, value++)
+                indexes.get(i).setText(Integer.toString(value));
 
-            keyboardRow1.get(0).setText("« " + Integer.toString(0)).setCallbackData(Integer.toString(0));
-            keyboardRow1.get(1).setText("‹ " + keyboardRow1.get(1).getText());
-            keyboardRow1.get(BTN_LAST).setText(Integer.toString(lastValue)).setCallbackData(Integer.toString(lastValue));
-        } else {
-            // return « 0 |‹ 2 |· 3 ·| 4 ›| 6 »
-            for (int i = 1, value = choosed - MAGIC; i < BTN_LAST; i++, value++)
-                keyboardRow1.get(i).setText(Integer.toString(value)).setCallbackData(Integer.toString(value));
+        indexes.get(0).setText(Integer.toString(0));
+        indexes.get(BTN_LAST).setText(Integer.toString(lastValue));
 
-            keyboardRow1.get(0).setText("« " + Integer.toString(0)).setCallbackData(Integer.toString(0));
-            keyboardRow1.get(1).setText("‹ " + keyboardRow1.get(1).getText());
-            keyboardRow1.get(BTN_PENULTIMATE).setText(keyboardRow1.get(BTN_PENULTIMATE).getText() + " ›");
-            keyboardRow1.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(Integer.toString(lastValue));
+        for (InlineKeyboardButton btn : indexes)
+            btn.setCallbackData(id + '_' + INDEX + '_' + btn.getText());
+
+        if (chosen > BTN_PENULTIMATE - 1) {
+            indexes.set(0, first(indexes.get(0)));
+            indexes.set(1, second(indexes.get(1)));
         }
 
-        for (InlineKeyboardButton btn : keyboardRow1)
-            if (btn.getText().equals(Integer.toString(choosed)))
+        if (chosen < lastValue - (2 * MAGIC)) {
+            indexes.set(BTN_PENULTIMATE, penultimate(indexes.get(BTN_PENULTIMATE)));
+            indexes.set(BTN_LAST, last(indexes.get(BTN_LAST)));
+        }
+
+        for (InlineKeyboardButton btn : indexes)
+            if (btn.getText().equals(Integer.toString(chosen)))
                 btn.setText("· " + btn.getText() + " ·");
 
 
-        inlineKeyboard.add(keyboardRow1);
-        if (text != null) {
-            List<InlineKeyboardButton> keyboardRow2 = new ArrayList<>();
-            keyboardRow2.add(new InlineKeyboardButton().setText(text).setCallbackData(text));
-            inlineKeyboard.add(keyboardRow2);
+//        if (chosen <= BTN_PENULTIMATE - 1) {
+//            // return 0 | 1 | 2 | 3 ›| 6 »
+//            for (int i = 1; i < BTN_LAST; i++)
+//                indexes.get(i).setText(Integer.toString(i)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(i));
+//
+//            indexes.get(0).setText(Integer.toString(0)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(0));
+//            indexes.get(BTN_PENULTIMATE).setText(indexes.get(BTN_PENULTIMATE).getText() + " ›");
+//            indexes.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(id + '_' + INDEX + '_' + Integer.toString(lastValue));
+//        } else if (chosen >= lastValue - (2 * MAGIC)) {
+//            // return « 0 |‹ 3 | 4 | 5 | 6
+//            for (int i = 1, value = lastValue - (2 * MAGIC) - 1; i < BTN_LAST; i++, value++)
+//                indexes.get(i).setText(Integer.toString(value)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(value));
+//
+//            indexes.get(0).setText("« " + Integer.toString(0)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(0));
+//            indexes.get(1).setText("‹ " + indexes.get(1).getText());
+//            indexes.get(BTN_LAST).setText(Integer.toString(lastValue)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(lastValue));
+//        } else {
+//            // return « 0 |‹ 2 | 3 | 4 ›| 6 »
+//            for (int i = 1, value = chosen - MAGIC; i < BTN_LAST; i++, value++)
+//                indexes.get(i).setText(Integer.toString(value)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(value));
+//
+//            indexes.get(0).setText("« " + Integer.toString(0)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(0));
+//            indexes.get(1).setText("‹ " + indexes.get(1).getText());
+//            indexes.get(BTN_PENULTIMATE).setText(indexes.get(BTN_PENULTIMATE).getText() + " ›");
+//            indexes.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(id + '_' + INDEX + '_' + Integer.toString(lastValue));
+//        }
+
+
+        // endregion indexes
+        inlineKeyboard.add(indexes);
+
+        Character character = id.charAt(id.length() - 1);
+
+        List<InlineKeyboardButton> andataReturn = new ArrayList<>();
+        // region andataReturn
+        switch (character) {
+            case 'A':
+                andataReturn.add(new InlineKeyboardButton().setText(RETURN).setCallbackData(id + '_' + RETURN + '_' + chosen));
+                break;
+
+            case 'R':
+                andataReturn.add(new InlineKeyboardButton().setText(ANDATA).setCallbackData(id + '_' + ANDATA + '_' + chosen));
+                break;
         }
+        // endregion andataReturn
+        if (!andataReturn.isEmpty()) inlineKeyboard.add(andataReturn);
+
+        List<InlineKeyboardButton> now = new ArrayList<>();
+        // region now
+        now.add(new InlineKeyboardButton().setText(NOW).setCallbackData(id + '_' + NOW + '_' + chosen));
+        // endregion now
+        inlineKeyboard.add(now);
+
         replyKeyboardMarkup.setKeyboard(inlineKeyboard);
         return replyKeyboardMarkup;
     }
+
+    // endregion inlineKeyboard
+
 }
