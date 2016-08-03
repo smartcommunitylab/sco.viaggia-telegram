@@ -226,7 +226,7 @@ public class Keyboards {
 
         for (InlineKeyboardButton btn : indexes)
             if (btn.getText().equals(Integer.toString(chosen)))
-                btn.setText("· " + btn.getText() + " ·").setCallbackData("-1");
+                btn.setText("· " + btn.getText() + " ·").setCallbackData(id + '~' + '·' + '~' + Integer.toString(-1));
 
         // endregion indexes
         inlineKeyboard.add(indexes);

@@ -179,15 +179,12 @@ public class GestioneHandlers extends TelegramLongPollingBot {
     private void handleIncomingPositionMessage(Message message) throws TelegramApiException, MobilityServiceException {
         switch (Current.getMenu(message.getChatId())) {
             case START:
-                // TODO
                 error(message);
                 break;
             case AUTOBUS:
-                // TODO
                 error(message);
                 break;
             case TRAINS:
-                // TODO
                 error(message);
                 break;
             case PARKINGS:
@@ -247,38 +244,39 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         String option = cbq.getData().substring(cbq.getData().indexOf('~') + 1, cbq.getData().lastIndexOf('~'));
         int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('~') + 1));
 
-        if (chosen != -1) {
 
-            TimeTable timeTable;
+        TimeTable timeTable;
 
-            switch (option) {
-                case INDEX:
-                    timeTable = Database.getAutobusTimetable(routeId);
+        switch (option) {
+            case "·":
+                break;
 
-                    autobusSendEdit(routeId, chosen, timeTable, cbq);
-                    break;
+            case INDEX:
+                timeTable = Database.getAutobusTimetable(routeId);
 
-                case RETURN:
-                    routeId = routeId.replace('A', 'R');
-                    timeTable = Database.getAutobusTimetable(routeId);
+                autobusSendEdit(routeId, chosen, timeTable, cbq);
+                break;
 
-                    autobusSendEdit(routeId, chosen, timeTable, cbq);
-                    break;
+            case RETURN:
+                routeId = routeId.replace('A', 'R');
+                timeTable = Database.getAutobusTimetable(routeId);
 
-                case ANDATA:
-                    routeId = routeId.replace('R', 'A');
-                    timeTable = Database.getAutobusTimetable(routeId);
+                autobusSendEdit(routeId, chosen, timeTable, cbq);
+                break;
 
-                    autobusSendEdit(routeId, chosen, timeTable, cbq);
-                    break;
+            case ANDATA:
+                routeId = routeId.replace('R', 'A');
+                timeTable = Database.getAutobusTimetable(routeId);
 
-                case NOW:
-                    timeTable = Database.getAutobusTimetable(routeId);
-                    int now = Database.getCurrentIndex(timeTable);
+                autobusSendEdit(routeId, chosen, timeTable, cbq);
+                break;
 
-                    if (now != chosen) autobusSendEdit(routeId, now, timeTable, cbq);
-                    break;
-            }
+            case NOW:
+                timeTable = Database.getAutobusTimetable(routeId);
+                int now = Database.getCurrentIndex(timeTable);
+
+                if (now != chosen) autobusSendEdit(routeId, now, timeTable, cbq);
+                break;
         }
 
 
@@ -291,24 +289,25 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         String option = cbq.getData().substring(cbq.getData().indexOf('~') + 1, cbq.getData().lastIndexOf('~'));
         int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('~') + 1));
 
-        if (chosen != -1) {
 
-            TimeTable timeTable;
+        TimeTable timeTable;
 
-            switch (option) {
-                case INDEX:
-                    timeTable = Database.getTrainTimetable(routeId);
+        switch (option) {
+            case "·":
+                break;
 
-                    trainSendEdit(routeId, chosen, timeTable, cbq);
-                    break;
+            case INDEX:
+                timeTable = Database.getTrainTimetable(routeId);
 
-                case NOW:
-                    timeTable = Database.getTrainTimetable(routeId);
-                    int now = Database.getCurrentIndex(timeTable);
+                trainSendEdit(routeId, chosen, timeTable, cbq);
+                break;
 
-                    if (now != chosen) trainSendEdit(routeId, now, timeTable, cbq);
-                    break;
-            }
+            case NOW:
+                timeTable = Database.getTrainTimetable(routeId);
+                int now = Database.getCurrentIndex(timeTable);
+
+                if (now != chosen) trainSendEdit(routeId, now, timeTable, cbq);
+                break;
         }
 
 
