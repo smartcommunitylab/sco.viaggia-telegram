@@ -213,6 +213,22 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
     // region voids
 
+    private void autobus(Message message) throws TelegramApiException, MobilityServiceException {
+        String routeId = Database.getAutobusRouteId(message.getText(), true);
+
+        if (routeId == null)
+            error(message);
+        else {
+            TimeTable timeTable = Database.getAutobusTimetable(routeId);
+            int index = Database.getCurrentIndex(timeTable);
+
+            if (Database.hasReturn(message.getText()))
+                sendMessageDefault(message, inlineKeyboardAutobus(routeId, index, timeTable.getTimes().size() - 1), textAutobus(message.getText(), timeTable, index));
+            else
+                sendMessageDefault(message, inlineKeyboardAutobus(routeId, index, timeTable.getTimes().size() - 1), textAutobus(message.getText(), timeTable, index));
+        }
+    }
+
     private void trains(Message message) throws TelegramApiException, MobilityServiceException {
         String routeId = Database.getTrainRouteId(message.getText());
 
@@ -221,76 +237,102 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         } else {
             TimeTable timeTable = Database.getTrainTimetable(routeId);
             int index = Database.getCurrentIndex(timeTable);
-            sendMessageDefault(message, inlineKeyboard(routeId, index, timeTable.getTimes().size() - 1), textTrain(routeId, timeTable, index));
+            sendMessageDefault(message, inlineKeyboardTrain(routeId, index, timeTable.getTimes().size() - 1), textTrain(message.getText(), timeTable, index));
         }
     }
-
-    // TODO
 
     private void autobusEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
 
-        String routeId = cbq.getData().substring(0, cbq.getData().indexOf('_'));
-        String option = cbq.getData().substring(cbq.getData().indexOf('_') + 1, cbq.getData().lastIndexOf('_'));
-        int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('_') + 1));
+        String routeId = cbq.getData().substring(0, cbq.getData().indexOf('~'));
+        String option = cbq.getData().substring(cbq.getData().indexOf('~') + 1, cbq.getData().lastIndexOf('~'));
+        int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('~') + 1));
 
-        Message message = cbq.getMessage();
+        if (chosen != -1) {
 
-        String nameAutobus = "";
-        TimeTable timeTable = Database.getAutobusTimetable(routeId);
-        int now = Database.getCurrentIndex(timeTable);
-        String text;
-        InlineKeyboardMarkup keyboardMarkup;
+            TimeTable timeTable;
 
-        switch (option) {
-            case RETURN:
-                routeId = routeId.replace('A', 'R');
-                break;
+            switch (option) {
+                case INDEX:
+                    timeTable = Database.getAutobusTimetable(routeId);
 
-            case ANDATA:
-                routeId = routeId.replace('R', 'A');
-                break;
+                    autobusSendEdit(routeId, chosen, timeTable, cbq);
+                    break;
+
+                case RETURN:
+                    routeId = routeId.replace('A', 'R');
+                    timeTable = Database.getAutobusTimetable(routeId);
+
+                    autobusSendEdit(routeId, chosen, timeTable, cbq);
+                    break;
+
+                case ANDATA:
+                    routeId = routeId.replace('R', 'A');
+                    timeTable = Database.getAutobusTimetable(routeId);
+
+                    autobusSendEdit(routeId, chosen, timeTable, cbq);
+                    break;
+
+                case NOW:
+                    timeTable = Database.getAutobusTimetable(routeId);
+                    int now = Database.getCurrentIndex(timeTable);
+
+                    if (now != chosen) autobusSendEdit(routeId, now, timeTable, cbq);
+                    break;
+            }
         }
 
-        for (Route route : Database.getAutbusRoute())
-            if (route.getId().getId().equals(routeId))
-                nameAutobus = route.getRouteLongName();
 
-        text = textAutobus(nameAutobus, timeTable, chosen);
-        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().get(0).size() - 1);
-
-        answerCallbackQuery(cbq, AUTOBUSCOMMAND + " " + nameAutobus);
-
-        if (!(option.equals(NOW) && now == chosen))
-            editMessageDefault(message, keyboardMarkup, text);
+        answerCallbackQuery(cbq, AUTOBUSCOMMAND);
     }
-
-    // TODO
 
     private void trainsEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
 
-        String routeId = cbq.getData().substring(0, cbq.getData().indexOf('_'));
-        String option = cbq.getData().substring(cbq.getData().indexOf('_') + 1, cbq.getData().lastIndexOf('_'));
-        int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('_') + 1));
+        String routeId = cbq.getData().substring(0, cbq.getData().indexOf('~'));
+        String option = cbq.getData().substring(cbq.getData().indexOf('~') + 1, cbq.getData().lastIndexOf('~'));
+        int chosen = Integer.parseInt(cbq.getData().substring(cbq.getData().lastIndexOf('~') + 1));
 
-        Message message = cbq.getMessage();
+        if (chosen != -1) {
 
+            TimeTable timeTable;
+
+            switch (option) {
+                case INDEX:
+                    timeTable = Database.getTrainTimetable(routeId);
+
+                    trainSendEdit(routeId, chosen, timeTable, cbq);
+                    break;
+
+                case NOW:
+                    timeTable = Database.getTrainTimetable(routeId);
+                    int now = Database.getCurrentIndex(timeTable);
+
+                    if (now != chosen) trainSendEdit(routeId, now, timeTable, cbq);
+                    break;
+            }
+        }
+
+
+        answerCallbackQuery(cbq, TRAINSCOMMAND);
+    }
+
+    private void autobusSendEdit(String routeId, int chosen, TimeTable timeTable, CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
+        String nameAutobus = "";
+
+        for (Route route : Database.getAutbusRoute())
+            if (route.getId().getId().equals(routeId))
+                nameAutobus = route.getRouteShortName();
+
+        editMessageDefault(cbq.getMessage(), inlineKeyboardAutobus(routeId, chosen, timeTable.getTimes().size() - 1), textAutobus(nameAutobus, timeTable, chosen));
+    }
+
+    private void trainSendEdit(String routeId, int chosen, TimeTable timeTable, CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
         String nameTrain = "";
-        TimeTable timeTable = Database.getAutobusTimetable(routeId);
-        int now = Database.getCurrentIndex(timeTable);
-        String text;
-        InlineKeyboardMarkup keyboardMarkup;
 
         for (Route route : Database.getTrainsRoute())
             if (route.getId().getId().equals(routeId))
                 nameTrain = route.getRouteLongName();
 
-        text = textTrain(nameTrain, timeTable, chosen);
-        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().get(0).size() - 1);
-
-        answerCallbackQuery(cbq, TRAINSCOMMAND + " " + nameTrain);
-
-        if (!(option.equals(NOW) && now == chosen))
-            editMessageDefault(message, keyboardMarkup, text);
+        editMessageDefault(cbq.getMessage(), inlineKeyboardTrain(routeId, chosen, timeTable.getTimes().size() - 1), textTrain(nameTrain, timeTable, chosen));
     }
 
     private void zone(Message message, Menu menu) throws TelegramApiException, MobilityServiceException {
@@ -318,22 +360,6 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
     private void error(Message message) throws TelegramApiException {
         sendMessageDefaultWithReply(message, null, Texts.textError(Current.getLanguage(message.getChatId())));
-    }
-
-    private void autobus(Message message) throws TelegramApiException, MobilityServiceException {
-        String routeId = Database.getAutobusRouteId(message.getText(), true);
-
-        if (routeId == null)
-            error(message);
-        else {
-            TimeTable timeTable = Database.getAutobusTimetable(routeId);
-            int index = Database.getCurrentIndex(timeTable);
-
-            if (Database.hasReturn(message.getText()))
-                sendMessageDefault(message, inlineKeyboard(routeId, index, timeTable.getTimes().size() - 1), textAutobus(routeId, timeTable, index));
-            else
-                sendMessageDefault(message, inlineKeyboard(routeId, index, timeTable.getTimes().size() - 1), textAutobus(routeId, timeTable, index));
-        }
     }
 
     // endregion voids
