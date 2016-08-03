@@ -253,10 +253,10 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
         for (Route route : Database.getAutbusRoute())
             if (route.getId().getId().equals(routeId))
-                nameAutobus = route.getRouteLongName();
+                nameAutobus = route.getRouteShortName();
 
         text = textAutobus(nameAutobus, timeTable, chosen);
-        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().get(0).size() - 1);
+        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().size() - 1);
 
         answerCallbackQuery(cbq, AUTOBUSCOMMAND + " " + nameAutobus);
 
@@ -285,7 +285,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
                 nameTrain = route.getRouteLongName();
 
         text = textTrain(nameTrain, timeTable, chosen);
-        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().get(0).size() - 1);
+        keyboardMarkup = inlineKeyboard(routeId, chosen, timeTable.getTimes().size() - 1);
 
         answerCallbackQuery(cbq, TRAINSCOMMAND + " " + nameTrain);
 
