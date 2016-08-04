@@ -32,7 +32,7 @@ public class Database {
     private static final String AGENCY_TRAINS_TB = "5";
     private static final String AGENCY_TRAINS_TM = "10";
     private static final String AGENCY_PARKINGS = "COMUNE_DI_TRENTO";
-    private static final String AGENCY_BIKESHARINGS = "trento";
+    private static final String AGENCY_BIKESHARINGS = "BIKE_SHARING_TOBIKE_TRENTO";
     private static final String SERVER_URL = "https://tn.smartcommunitylab.it/core.mobility";
 
     // endregion final
