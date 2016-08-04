@@ -25,6 +25,7 @@ public class Commands {
 
     // region cbq
 
+    public static final String CURRENT = "·";
     public static final String INDEX = "INDEX";
     public static final String RETURN = "RITORNO";
     public static final String ANDATA = "ANDATA";

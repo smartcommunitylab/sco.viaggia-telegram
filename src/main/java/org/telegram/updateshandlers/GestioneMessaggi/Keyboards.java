@@ -178,7 +178,7 @@ public class Keyboards {
 
     // region inlineKeyboard
 
-    public static InlineKeyboardMarkup inlineKeyboard(String id, int chosen, int lastValue) {
+    private static InlineKeyboardMarkup inlineKeyboard(String id, int chosen, int lastValue, boolean isAutobus) {
         InlineKeyboardMarkup replyKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> inlineKeyboard = new ArrayList<>();
 
@@ -212,7 +212,7 @@ public class Keyboards {
         indexes.get(BTN_LAST).setText(Integer.toString(lastValue));
 
         for (InlineKeyboardButton btn : indexes)
-            btn.setCallbackData(id + '_' + INDEX + '_' + btn.getText());
+            btn.setCallbackData(id + '~' + INDEX + '~' + btn.getText());
 
         if (chosen > BTN_PENULTIMATE - 1) {
             indexes.set(0, first(indexes.get(0)));
@@ -226,59 +226,32 @@ public class Keyboards {
 
         for (InlineKeyboardButton btn : indexes)
             if (btn.getText().equals(Integer.toString(chosen)))
-                btn.setText("· " + btn.getText() + " ·");
-
-
-//        if (chosen <= BTN_PENULTIMATE - 1) {
-//            // return 0 | 1 | 2 | 3 ›| 6 »
-//            for (int i = 1; i < BTN_LAST; i++)
-//                indexes.get(i).setText(Integer.toString(i)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(i));
-//
-//            indexes.get(0).setText(Integer.toString(0)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(0));
-//            indexes.get(BTN_PENULTIMATE).setText(indexes.get(BTN_PENULTIMATE).getText() + " ›");
-//            indexes.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(id + '_' + INDEX + '_' + Integer.toString(lastValue));
-//        } else if (chosen >= lastValue - (2 * MAGIC)) {
-//            // return « 0 |‹ 3 | 4 | 5 | 6
-//            for (int i = 1, value = lastValue - (2 * MAGIC) - 1; i < BTN_LAST; i++, value++)
-//                indexes.get(i).setText(Integer.toString(value)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(value));
-//
-//            indexes.get(0).setText("« " + Integer.toString(0)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(0));
-//            indexes.get(1).setText("‹ " + indexes.get(1).getText());
-//            indexes.get(BTN_LAST).setText(Integer.toString(lastValue)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(lastValue));
-//        } else {
-//            // return « 0 |‹ 2 | 3 | 4 ›| 6 »
-//            for (int i = 1, value = chosen - MAGIC; i < BTN_LAST; i++, value++)
-//                indexes.get(i).setText(Integer.toString(value)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(value));
-//
-//            indexes.get(0).setText("« " + Integer.toString(0)).setCallbackData(id + '_' + INDEX + '_' + Integer.toString(0));
-//            indexes.get(1).setText("‹ " + indexes.get(1).getText());
-//            indexes.get(BTN_PENULTIMATE).setText(indexes.get(BTN_PENULTIMATE).getText() + " ›");
-//            indexes.get(BTN_LAST).setText(Integer.toString(lastValue) + " »").setCallbackData(id + '_' + INDEX + '_' + Integer.toString(lastValue));
-//        }
-
+                btn.setText("· " + btn.getText() + " ·").setCallbackData(id + '~' + CURRENT + '~' + Integer.toString(-1));
 
         // endregion indexes
         inlineKeyboard.add(indexes);
 
         Character character = id.charAt(id.length() - 1);
 
-        List<InlineKeyboardButton> andataReturn = new ArrayList<>();
-        // region andataReturn
-        switch (character) {
-            case 'A':
-                andataReturn.add(new InlineKeyboardButton().setText(RETURN).setCallbackData(id + '_' + RETURN + '_' + chosen));
-                break;
+        if (isAutobus) {
+            List<InlineKeyboardButton> andataReturn = new ArrayList<>();
+            // region andataReturn
+            switch (character) {
+                case 'A':
+                    andataReturn.add(new InlineKeyboardButton().setText(RETURN).setCallbackData(id + '~' + RETURN + '~' + chosen));
+                    break;
 
-            case 'R':
-                andataReturn.add(new InlineKeyboardButton().setText(ANDATA).setCallbackData(id + '_' + ANDATA + '_' + chosen));
-                break;
+                case 'R':
+                    andataReturn.add(new InlineKeyboardButton().setText(ANDATA).setCallbackData(id + '~' + ANDATA + '~' + chosen));
+                    break;
+            }
+            // endregion andataReturn
+            if (!andataReturn.isEmpty()) inlineKeyboard.add(andataReturn);
         }
-        // endregion andataReturn
-        if (!andataReturn.isEmpty()) inlineKeyboard.add(andataReturn);
 
         List<InlineKeyboardButton> now = new ArrayList<>();
         // region now
-        now.add(new InlineKeyboardButton().setText(NOW).setCallbackData(id + '_' + NOW + '_' + chosen));
+        now.add(new InlineKeyboardButton().setText(NOW).setCallbackData(id + '~' + NOW + '~' + chosen));
         // endregion now
         inlineKeyboard.add(now);
 
@@ -286,6 +259,13 @@ public class Keyboards {
         return replyKeyboardMarkup;
     }
 
+    public static InlineKeyboardMarkup inlineKeyboardAutobus(String id, int chosen, int lastValue) {
+        return inlineKeyboard(id, chosen, lastValue, true);
+    }
+
+    public static InlineKeyboardMarkup inlineKeyboardTrain(String id, int chosen, int lastValue) {
+        return inlineKeyboard(id, chosen, lastValue, false);
+    }
     // endregion inlineKeyboard
 
 }
