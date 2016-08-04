@@ -32,7 +32,7 @@ public class Database {
     private static final String AGENCY_TRAINS_TB = "5";
     private static final String AGENCY_TRAINS_TM = "10";
     private static final String AGENCY_PARKINGS = "COMUNE_DI_TRENTO";
-    private static final String AGENCY_BIKESHARINGS = "BIKE_SHARING_TOBIKE_TRENTO";
+    private static final String AGENCY_BIKESHARINGS = "trento";
     private static final String SERVER_URL = "https://tn.smartcommunitylab.it/core.mobility";
 
     // endregion final
@@ -57,22 +57,22 @@ public class Database {
 
         cacheParkings = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build(new CacheLoader<String, List<Parking>>() {
             @Override
-            public List<Parking> load(String s) throws Exception {
-                return downloadParkings();
+            public List<Parking> load(String agencyId) throws Exception {
+                return downloadParkings(agencyId);
             }
         });
 
         cacheBikeSharings = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build(new CacheLoader<String, List<Parking>>() {
             @Override
-            public List<Parking> load(String s) throws Exception {
-                return downloadBikeSharing();
+            public List<Parking> load(String agencyId) throws Exception {
+                return downloadBikeSharing(agencyId);
             }
         });
 
         cacheAutobusRoutes = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build(new CacheLoader<String, List<Route>>() {
             @Override
-            public List<Route> load(String s) throws Exception {
-                return downloadAutbusRoute();
+            public List<Route> load(String agencyId) throws Exception {
+                return downloadAutbusRoute(agencyId);
             }
         });
 
@@ -135,7 +135,7 @@ public class Database {
     }
 
     private static String getAutobusRouteId(String routeId, Boolean isAndata) throws ExecutionException {
-        for (Route route : cacheAutobusRoutes.get("NULL")) {
+        for (Route route : cacheAutobusRoutes.get(AGENCY_AUTOBUS)) {
             if (route.getRouteShortName().equals(routeId))
                 if (route.getId().getId().endsWith("C"))
                     return route.getId().getId();
@@ -155,17 +155,17 @@ public class Database {
         return dataService.getTaxiAgencyContacts(null);
     }
 
-    private static List<Parking> downloadParkings() throws SecurityException, MobilityServiceException {
-        return dataService.getParkings(AGENCY_PARKINGS, null);
+    private static List<Parking> downloadParkings(String agencyId) throws SecurityException, MobilityServiceException {
+        return dataService.getParkings(agencyId, null);
     }
 
-    private static List<Parking> downloadBikeSharing() throws SecurityException, MobilityServiceException {
-        return dataService.getBikeSharings(AGENCY_BIKESHARINGS, null);
+    private static List<Parking> downloadBikeSharing(String agencyId) throws SecurityException, MobilityServiceException {
+        return dataService.getBikeSharings(agencyId, null);
     }
 
-    private static List<Route> downloadAutbusRoute() throws SecurityException, MobilityServiceException {
+    private static List<Route> downloadAutbusRoute(String agencyId) throws SecurityException, MobilityServiceException {
 
-        List<Route> autobus = dataService.getRoutes(AGENCY_AUTOBUS, null);
+        List<Route> autobus = dataService.getRoutes(agencyId, null);
 
         Map<String, String> routeSymId;
         {
@@ -213,11 +213,11 @@ public class Database {
     // region gets
 
     public static List<TaxiContact> getTaxiContacts() throws ExecutionException {
-        return cacheTaxiContacts.get("NULL");
+        return cacheTaxiContacts.get("0");
     }
 
     public static List<Route> getAutobusRoutes() throws ExecutionException {
-        return cacheAutobusRoutes.get("NULL");
+        return cacheAutobusRoutes.get(AGENCY_AUTOBUS);
     }
 
     public static List<Route> getTrainsRoutes() throws ExecutionException {
@@ -225,11 +225,11 @@ public class Database {
     }
 
     public static List<Parking> getParkings() throws ExecutionException {
-        return cacheParkings.get("NULL");
+        return cacheParkings.get(AGENCY_PARKINGS);
     }
 
     public static List<Parking> getBikeSharings() throws ExecutionException {
-        return cacheBikeSharings.get("NULL");
+        return cacheBikeSharings.get(AGENCY_BIKESHARINGS);
     }
 
     public static TimeTable getAutobusTimetable(String routeId) throws ExecutionException {
