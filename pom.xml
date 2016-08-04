@@ -101,6 +101,12 @@
             <version>1.9.2.RELEASE</version>
         </dependency>
         <!-- endregion ROBBBE Spring Data MongoDB -->
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -20,6 +20,7 @@ import org.telegram.updateshandlers.GestioneMessaggi.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
 import static org.telegram.updateshandlers.GestioneMessaggi.Keyboards.*;
@@ -60,7 +61,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
     // region handlers
 
-    private void handleIncomingTextMessage(Message message) throws TelegramApiException, MobilityServiceException {
+    private void handleIncomingTextMessage(Message message) throws TelegramApiException, MobilityServiceException, ExecutionException {
         Long chatId = message.getChatId();
 
         switch (message.getText()) {
@@ -104,19 +105,19 @@ public class GestioneHandlers extends TelegramLongPollingBot {
                                 sendMessageDefault(message, keyboardStart(chatId), textStartHelp(Current.getLanguage(chatId)));
                                 break;
                             case TAXICOMMAND:
-                                sendMessageDefault(message, keyboardStart(chatId), textStartTaxi(Database.getTaxiInfo()));
+                                sendMessageDefault(message, keyboardStart(chatId), textStartTaxi(Database.getTaxiContacts()));
                                 break;
                             case AUTOBUSCOMMAND:
-                                sendMessageDefault(message, keyboardAutobus(chatId, Database.getAutbusRoute()), textStartAutobus(Current.getLanguage(chatId)));
+                                sendMessageDefault(message, keyboardAutobus(chatId, Database.getAutobusRoutes()), textStartAutobus(Current.getLanguage(chatId)));
                                 break;
                             case TRAINSCOMMAND:
-                                sendMessageDefault(message, keyboardTrains(chatId, Database.getTrainsRoute()), textStartTrains(Current.getLanguage(chatId)));
+                                sendMessageDefault(message, keyboardTrains(chatId, Database.getTrainsRoutes()), textStartTrains(Current.getLanguage(chatId)));
                                 break;
                             case PARKINGSCOMMAND:
                                 sendMessageDefault(message, keyboardParkings(chatId, Database.getParkings()), textStartParkings(Current.getLanguage(chatId)));
                                 break;
                             case BIKESHARINGSCOMMAND:
-                                sendMessageDefault(message, keyboardBikeSharings(chatId, Database.getBikeSharing()), textStartBikeSharings(Current.getLanguage(chatId)));
+                                sendMessageDefault(message, keyboardBikeSharings(chatId, Database.getBikeSharings()), textStartBikeSharings(Current.getLanguage(chatId)));
                                 break;
                             default:
                                 sendMessageDefaultWithReply(message, keyboardStart(chatId), textError(Current.getLanguage(chatId)));
@@ -176,7 +177,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         }
     }
 
-    private void handleIncomingPositionMessage(Message message) throws TelegramApiException, MobilityServiceException {
+    private void handleIncomingPositionMessage(Message message) throws TelegramApiException, MobilityServiceException, ExecutionException {
         switch (Current.getMenu(message.getChatId())) {
             case START:
                 error(message);
@@ -188,15 +189,15 @@ public class GestioneHandlers extends TelegramLongPollingBot {
                 error(message);
                 break;
             case PARKINGS:
-                sendMessageDefault(message, Keyboards.keyboardParkings(message.getChatId(), Database.getParkings()), textParkingsNear(Database.getNear(Database.getParkings(), message.getLocation())));
+                sendMessageDefault(message, Keyboards.keyboardParkings(message.getChatId(), Database.getParkings()), textParkingsNear(Database.findNear(Database.getParkings(), message.getLocation())));
                 break;
             case BIKESHARINGS:
-                sendMessageDefault(message, Keyboards.keyboardBikeSharings(message.getChatId(), Database.getBikeSharing()), textBikeSharingsNear(Database.getNear(Database.getBikeSharing(), message.getLocation())));
+                sendMessageDefault(message, Keyboards.keyboardBikeSharings(message.getChatId(), Database.getBikeSharings()), textBikeSharingsNear(Database.findNear(Database.getBikeSharings(), message.getLocation())));
                 break;
         }
     }
 
-    private void handleIncomingCallbackQuery(CallbackQuery cbq) throws TelegramApiException, MobilityServiceException {
+    private void handleIncomingCallbackQuery(CallbackQuery cbq) throws TelegramApiException, MobilityServiceException, ExecutionException {
         Message message = cbq.getMessage();
 
         if (message.getText().startsWith(AUTOBUSCOMMAND))
@@ -210,35 +211,31 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
     // region voids
 
-    private void autobus(Message message) throws TelegramApiException, MobilityServiceException {
-        String routeId = Database.getAutobusRouteId(message.getText(), true);
+    private void autobus(Message message) throws TelegramApiException, MobilityServiceException, ExecutionException {
+        String routeId = Database.findAutobusAndataRouteId(message.getText());
 
         if (routeId == null)
             error(message);
         else {
             TimeTable timeTable = Database.getAutobusTimetable(routeId);
-            int index = Database.getCurrentIndex(timeTable);
-
-            if (Database.hasReturn(message.getText()))
-                sendMessageDefault(message, inlineKeyboardAutobus(routeId, index, timeTable.getTimes().size() - 1), textAutobus(message.getText(), timeTable, index));
-            else
-                sendMessageDefault(message, inlineKeyboardAutobus(routeId, index, timeTable.getTimes().size() - 1), textAutobus(message.getText(), timeTable, index));
+            int index = Database.findCurrentIndex(timeTable);
+            sendMessageDefault(message, inlineKeyboardAutobus(routeId, index, timeTable.getTimes().size() - 1), textAutobus(message.getText(), timeTable, index));
         }
     }
 
-    private void trains(Message message) throws TelegramApiException, MobilityServiceException {
-        String routeId = Database.getTrainRouteId(message.getText());
+    private void trains(Message message) throws TelegramApiException, MobilityServiceException, ExecutionException {
+        String routeId = Database.findTrainRouteId(message.getText());
 
         if (routeId == null) {
             error(message);
         } else {
             TimeTable timeTable = Database.getTrainTimetable(routeId);
-            int index = Database.getCurrentIndex(timeTable);
+            int index = Database.findCurrentIndex(timeTable);
             sendMessageDefault(message, inlineKeyboardTrain(routeId, index, timeTable.getTimes().size() - 1), textTrain(message.getText(), timeTable, index));
         }
     }
 
-    private void autobusEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
+    private void autobusEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException, ExecutionException {
 
         String routeId = cbq.getData().substring(0, cbq.getData().indexOf('~'));
         String option = cbq.getData().substring(cbq.getData().indexOf('~') + 1, cbq.getData().lastIndexOf('~'));
@@ -274,7 +271,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
             case NOW:
                 timeTable = Database.getAutobusTimetable(routeId);
-                int now = Database.getCurrentIndex(timeTable);
+                int now = Database.findCurrentIndex(timeTable);
 
                 if (now != chosen) autobusSendEdit(routeId, now, timeTable, cbq);
                 break;
@@ -284,7 +281,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         answerCallbackQuery(cbq, AUTOBUSCOMMAND);
     }
 
-    private void trainsEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
+    private void trainsEdit(CallbackQuery cbq) throws MobilityServiceException, TelegramApiException, ExecutionException {
 
         String routeId = cbq.getData().substring(0, cbq.getData().indexOf('~'));
         String option = cbq.getData().substring(cbq.getData().indexOf('~') + 1, cbq.getData().lastIndexOf('~'));
@@ -306,7 +303,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
             case NOW:
                 timeTable = Database.getTrainTimetable(routeId);
-                int now = Database.getCurrentIndex(timeTable);
+                int now = Database.findCurrentIndex(timeTable);
 
                 if (now != chosen) trainSendEdit(routeId, now, timeTable, cbq);
                 break;
@@ -316,29 +313,29 @@ public class GestioneHandlers extends TelegramLongPollingBot {
         answerCallbackQuery(cbq, TRAINSCOMMAND);
     }
 
-    private void autobusSendEdit(String routeId, int chosen, TimeTable timeTable, CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
+    private void autobusSendEdit(String routeId, int chosen, TimeTable timeTable, CallbackQuery cbq) throws MobilityServiceException, TelegramApiException, ExecutionException {
         String nameAutobus = "";
 
-        for (Route route : Database.getAutbusRoute())
+        for (Route route : Database.getAutobusRoutes())
             if (route.getId().getId().equals(routeId))
                 nameAutobus = route.getRouteShortName();
 
         editMessageDefault(cbq.getMessage(), inlineKeyboardAutobus(routeId, chosen, timeTable.getTimes().size() - 1), textAutobus(nameAutobus, timeTable, chosen));
     }
 
-    private void trainSendEdit(String routeId, int chosen, TimeTable timeTable, CallbackQuery cbq) throws MobilityServiceException, TelegramApiException {
+    private void trainSendEdit(String routeId, int chosen, TimeTable timeTable, CallbackQuery cbq) throws MobilityServiceException, TelegramApiException, ExecutionException {
         String nameTrain = "";
 
-        for (Route route : Database.getTrainsRoute())
+        for (Route route : Database.getTrainsRoutes())
             if (route.getId().getId().equals(routeId))
                 nameTrain = route.getRouteLongName();
 
         editMessageDefault(cbq.getMessage(), inlineKeyboardTrain(routeId, chosen, timeTable.getTimes().size() - 1), textTrain(nameTrain, timeTable, chosen));
     }
 
-    private void zone(Message message, Menu menu) throws TelegramApiException, MobilityServiceException {
+    private void zone(Message message, Menu menu) throws TelegramApiException, MobilityServiceException, ExecutionException {
         boolean flag = false;
-        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharing() : new ArrayList<>();
+        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharings() : new ArrayList<>();
 
         String text = message.getText();
 

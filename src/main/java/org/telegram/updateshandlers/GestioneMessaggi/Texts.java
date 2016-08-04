@@ -29,7 +29,7 @@ public class Texts {
     }
 
     private static String textSlots(Parking parking) {
-        return parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
+        return parking.isMonitored() && parking.getSlotsAvailable() >= 0 ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
     }
 
     private static String textNear(List<Parking> parkings, String command) {
