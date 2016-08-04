@@ -266,6 +266,7 @@ public class Keyboards {
     public static InlineKeyboardMarkup inlineKeyboardTrain(String id, int chosen, int lastValue) {
         return inlineKeyboard(id, chosen, lastValue, false);
     }
+
     // endregion inlineKeyboard
 
 }
