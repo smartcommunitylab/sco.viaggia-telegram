@@ -95,10 +95,9 @@ public class Texts {
                         "`BIKESHARING`- returns the availability and the location of the bike-sharing service's points in the area\n" +
                         "\n" +
                         "*Command list*\n" +
-                        "/start: return this message\n" +
-                        "/stop: stop the bot, re-starts with the start command\n" +
-                        "/language: change bot's language settings\n" +
-                        "/help: returns tips";
+                        "/start - return this message\n" +
+                        "/language - change bot's language settings\n" +
+                        "/help - returns tips";
             case ESPANOL:
                 return "*Bienvenido en @ViaggiaTrentoBot*\n" +
                         "El bot que soporta la movilización  urbana sostenible de Trento\n" +
@@ -114,7 +113,7 @@ public class Texts {
                         "`PARKINGS` - Da la disponibilidad y la posición del aparcamiento más cercano\n" +
                         "`BIKESHARINGS` - Da la disponibilidad y la posición del bike sharing más cercano\n" +
                         "\n" +
-                        "Lista de comandos*\n" +
+                        "*Lista de comandos*\n" +
                         "/start - regresa este mensaje\n" +
                         "/languege - cambia el idioma del bot\n" +
                         "/help - da mensajes de ayuda en las diferentes secciones";
