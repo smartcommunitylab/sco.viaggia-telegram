@@ -1,5 +1,8 @@
 package org.telegram;
 
+/**
+ * Created by gekoramy
+ */
 public class BuildVars {
     public static final Boolean debug = true;
     public static final String pathToLogs = "./";

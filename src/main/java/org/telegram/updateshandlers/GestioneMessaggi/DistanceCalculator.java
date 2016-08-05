@@ -27,6 +27,8 @@ package org.telegram.updateshandlers.GestioneMessaggi;
 /*::                                                                         :*/
 /*::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
 
+import java.util.Objects;
+
 class DistanceCalculator
 {
 
@@ -36,9 +38,9 @@ class DistanceCalculator
         dist = Math.acos(dist);
         dist = rad2deg(dist);
         dist = dist * 60 * 1.1515;
-        if (unit == "K") {
+        if (Objects.equals(unit, "K")) {
             dist = dist * 1.609344;
-        } else if (unit == "N") {
+        } else if (Objects.equals(unit, "N")) {
             dist = dist * 0.8684;
         }
 

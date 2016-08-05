@@ -1,14 +1,48 @@
 package org.telegram.updateshandlers.GestioneMessaggi;
 
 import eu.trentorise.smartcampus.mobilityservice.model.TaxiContact;
-import eu.trentorise.smartcampus.mobilityservice.model.TripData;
+import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
-import it.sayservice.platform.smartplanner.data.message.otpbeans.Stop;
-import org.apache.commons.lang.time.DurationFormatUtils;
 
 import java.util.List;
 
+import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
+
+/**
+ * Created by gekoramy
+ */
 public class Texts {
+
+    // region utilities
+
+    private static String textTimetable(TimeTable timeTable, int index) {
+        String text = "";
+
+        List<String> stops = timeTable.getStops();
+        List<String> times = timeTable.getTimes().get(index);
+
+        for (String time : times)
+            if (!time.isEmpty())
+                text += "`" + time + "` - " + stops.get(times.indexOf(time)) + "\n";
+
+        return text;
+    }
+
+    private static String textSlots(Parking parking) {
+        return parking.isMonitored() && parking.getSlotsAvailable() >= 0 ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
+    }
+
+    private static String textNear(List<Parking> parkings, String command) {
+        String text = "*NEAR TO YOU*";
+        if (parkings.isEmpty())
+            text = "*NO " + command + " NEAR TO YOU*";
+        else
+            for (Parking park : parkings)
+                text += "\n" + park.getName() + " : " + park.getDescription();
+        return text;
+    }
+
+    // endregion utilities
 
     // region commands
 
@@ -18,7 +52,7 @@ public class Texts {
                 return "Cambia lingua";
             case ENGLISH:
                 return "Change language";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "Cambia idioma";
             default:
                 return "Impossible";
@@ -55,19 +89,34 @@ public class Texts {
                         "\n" +
                         "*To begin...*\n" +
                         "`TAXI` - returns useful information about Trento's taxi service\n" +
-                        "`BUS` - returns the timetable of the selected bus route \n" +
+                        "`BUS` - returns the timetable of the selected bus route\n" +
                         "`TRAINS` - returns the timetable of the selected train\n" +
                         "`PARKINGS`- returns the availability and the location of the car parks in the area\n" +
                         "`BIKESHARING`- returns the availability and the location of the bike-sharing service's points in the area\n" +
                         "\n" +
                         "*Command list*\n" +
-                        "/start: return this message\n" +
-                        "/stop: stop the bot, re-starts with the start command\n" +
-                        "/language: change bot's language settings\n" +
-                        "/help: returns tips";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+                        "/start - return this message\n" +
+                        "/language - change bot's language settings\n" +
+                        "/help - returns tips";
+            case ESPANOL:
+                return "*Bienvenido en @ViaggiaTrentoBot*\n" +
+                        "El bot que soporta la movilización  urbana sostenible de Trento\n" +
+                        "• Podrás monitorear tus viajes y ser informado sobre eventuales retrasos\n" +
+                        "• Controla en tiempo real los horarios de trenes locales, bus urbanos y extra-urbanos\n" +
+                        "• Controla en tiempo real los aparcamientos disponibles en la ciudad\n" +
+                        "• Encuentra bike sharing disponibles en la ciudad\n" +
+                        "\n" +
+                        "*Para iniciar...*\n" +
+                        "`TAXI` -  Da información útil sobre los taxis de Trento\n" +
+                        "`AUTOBUS` -  Da información de los horarios del bus seleccionado\n" +
+                        "`TRAINS` - Da información de los horarios del tren seleccionado\n" +
+                        "`PARKINGS` - Da la disponibilidad y la posición del aparcamiento más cercano\n" +
+                        "`BIKESHARINGS` - Da la disponibilidad y la posición del bike sharing más cercano\n" +
+                        "\n" +
+                        "*Lista de comandos*\n" +
+                        "/start - regresa este mensaje\n" +
+                        "/languege - cambia el idioma del bot\n" +
+                        "/help - da mensajes de ayuda en las diferentes secciones";
             default:
                 return "Impossible";
         }
@@ -79,23 +128,8 @@ public class Texts {
                 return "Alquanto inaspettato...";
             case ENGLISH:
                 return "Quite unexpected...";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
-            default:
-                return "Impossible";
-        }
-    }
-
-    public static String textOption(Language language) {
-        switch (language) {
-            case ITALIANO:
-                return "Scusa, cosa hai detto?";
-            case ENGLISH:
-                return "Sorry, what did you say?";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Bastante inesperado";
             default:
                 return "Impossible";
         }
@@ -115,9 +149,8 @@ public class Texts {
                 return "Dimmi cosa ti interessa sapere";
             case ENGLISH:
                 return "Tell me what you want to know";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Dime que quieres saber";
             default:
                 return "Impossible";
         }
@@ -144,9 +177,8 @@ public class Texts {
                 return "Scegli la linea";
             case ENGLISH:
                 return "Choose the line";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Elige la linea";
             default:
                 return "Impossible";
         }
@@ -158,9 +190,8 @@ public class Texts {
                 return "Scegli la linea";
             case ENGLISH:
                 return "Choose the line";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Elige la linea";
             default:
                 return "Impossible";
         }
@@ -172,9 +203,8 @@ public class Texts {
                 return "Scegli il parcheggio, o invia la tua posizione";
             case ENGLISH:
                 return "Choose the parking, or send your location";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Elige el aparcamiento, o envia tu posición";
             default:
                 return "Impossible";
         }
@@ -186,9 +216,8 @@ public class Texts {
                 return "Scegli il bike sharing desiderato, o invia la tua posizione";
             case ENGLISH:
                 return "Choose the bike sharing, or send your location";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Elige el bike sharing, o envia tu posición";
             default:
                 return "Impossible";
         }
@@ -204,7 +233,7 @@ public class Texts {
                 return "Mi capisci ora?";
             case ENGLISH:
                 return "Do you understand me now?";
-            case ESPAÑOL:
+            case ESPANOL:
                 return "¿Me entiendes ahora?";
             default:
                 return "Impossible";
@@ -221,23 +250,17 @@ public class Texts {
                 return "Seleziona la linea desiderata per conoscere gli orari e le fermate nelle tue vicinanze.\n" +
                         "La barra in basso permette di scorrere le fasce orarie";
             case ENGLISH:
-                return "Select a line to view the timetable and the stops in your area\n" +
+                return "Select a line to view the timetable and the stops in your area.\n" +
                         "The bar allows to select a specific time slot";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Selecciona la linea deseada para conocer los horarios y la parada más cercanas.";
             default:
                 return "Impossible";
         }
     }
 
-    public static String textAutobus(List<TripData> tripDatas) {
-        String text = "*AUTOBUS*";
-        for (TripData el : tripDatas) {
-            text += "\n" + el.getRouteName() + " " + DurationFormatUtils.formatDurationHMS(el.getTime());
-        }
-
-        return text;
+    public static String textAutobus(String autobusId, TimeTable timeTable, int index) {
+        return "*" + AUTOBUSCOMMAND + " " + autobusId + "*\n" + textTimetable(timeTable, index);
     }
 
     // endregion Menu.AUTOBUS
@@ -247,25 +270,21 @@ public class Texts {
     public static String textTrainHelp(Language language) {
         switch (language) {
             case ITALIANO:
-                return "Seleziona la linea desiderata per conoscere gli orari e le fermate nelle tue vicinanze.\n" +
+                return "Seleziona il treno desiderato per conoscere gli orari e le stazioni nelle tue vicinanze.\n" +
                         "La barra in basso permette di scorrere le fasce orarie";
             case ENGLISH:
                 return "Select a train to view its timetable and the stations in your area\n" +
                         "The bar allows to select a specific time slot";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Selecciona el tren deseado para conocer los horaros y las estaciones más cercanas\n" +
+                        "La barra de abajo permite de mover la banda horaria";
             default:
                 return "Impossible";
         }
     }
 
-    public static String textTrain(List<Stop> stop) {
-        String text = "*TRAIN*";
-        for (Stop el : stop) {
-            text += "\n" + el.getName() + " " + el.getLongitude();
-        }
-        return text;
+    public static String textTrain(String trainId, TimeTable timeTable, int index) {
+        return "*" + TRAINSCOMMAND + " " + trainId + "*\n" + textTimetable(timeTable, index);
     }
 
 
@@ -276,32 +295,25 @@ public class Texts {
     public static String textParkingsHelp(Language language) {
         switch (language) {
             case ITALIANO:
-                return "Seleziona il parcheggio desiderato per conoscere la disponibilità e la sua posizione. \n" +
+                return "Seleziona il parcheggio desiderato per conoscere la disponibilità e la sua posizione.\n" +
                         "Inoltre puoi inviare la tua posizione per trovare i parcheggi piu vicini";
             case ENGLISH:
-                return "Select a parking to see if it is available and find its location. \n" +
+                return "Select a parking to see if it is available and find its location.\n" +
                         "What's more, you can send your location to know near parkings";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Selecciona el aparcamiento deseado para conocer la disponibilidad y su posición\n" +
+                        "Además podrás enviar tu posición para encontrar el aparcamiento más cercano";
             default:
                 return "Impossible";
         }
     }
 
     public static String textParking(Parking parking) {
-        String slots = parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
-        return "*Parking " + parking.getName() + "*\n" + parking.getDescription() + "\n" + slots;
+        return "*PARKING " + parking.getName() + "*\n" + parking.getDescription() + "\n" + textSlots(parking);
     }
 
     public static String textParkingsNear(List<Parking> parkings) {
-        String text = "*NEAR TO YOU*";
-        for (Parking el : parkings) {
-            text += "\n/" + el.getName() + " - " + el.getDescription();
-        }
-        if (parkings.isEmpty())
-            text = "*NO PARKINGS NEAR TO YOU*";
-        return text;
+        return textNear(parkings, PARKINGSCOMMAND);
     }
 
     // endregion Menu.PARKINGS
@@ -311,32 +323,26 @@ public class Texts {
     public static String textBikeSharingsHelp(Language language) {
         switch (language) {
             case ITALIANO:
-                return "Seleziona il punto bici desiderato per conoscere la disponibilità e la sua posizione. \n" +
+                return "Seleziona il punto bici desiderato per conoscere la disponibilità e la sua posizione.\n" +
                         "Inoltre puoi inviare la tua posizione per trovare i punti bici piu vicini";
             case ENGLISH:
-                return "Select a bike sharing to see if it is available and find its location. \n" +
+                return "Select a bike sharing to see if it is available and find its location.\n" +
                         "What's more, you can send your location to know bike sharings";
-            case ESPAÑOL:
-                // TODO
-                return "TODO";
+            case ESPANOL:
+                return "Selecciona el bike sharing deseado para conocer la disponibilidad y su posición\n" +
+                        "Además podrás enviar tu posición para encontrar el bike sharing más cercano ";
             default:
                 return "Impossible";
         }
     }
 
     public static String textBikeSharings(Parking parking) {
-        String slots = parking.isMonitored() ? "Slots available " + parking.getSlotsAvailable() : "Total Slots " + parking.getSlotsTotal();
-        return "*Bike sharing " + parking.getName() + "*\n" + parking.getDescription() + "\n" + slots;
+        return "*Bike sharing " + parking.getName() + "*\n" + parking.getDescription() + "\n" + textSlots(parking);
     }
 
     public static String textBikeSharingsNear(List<Parking> parkings) {
-        String text = "*NEAR TO YOU*";
-        for (Parking el : parkings) {
-            text += "\n" + el.getName() + " - " + el.getDescription();
-        }
-        if (parkings.isEmpty())
-            text = "*NO BIKE SHARING NEAR TO YOU*";
-        return text;
+        return textNear(parkings, BIKESHARINGSCOMMAND);
+
     }
 
     // endregion Menu.BIKESHARINGS
