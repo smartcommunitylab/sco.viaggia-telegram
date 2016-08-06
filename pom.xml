@@ -94,13 +94,12 @@
             <version>2.5</version>
         </dependency>
         <!-- endregion ROBBBE BELLE DI FBK -->
-        <!-- region ROBBBE Spring Data MongoDB -->
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
         <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-mongodb</artifactId>
-            <version>1.9.2.RELEASE</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
         </dependency>
-        <!-- endregion ROBBBE Spring Data MongoDB -->
     </dependencies>
 
     <build>

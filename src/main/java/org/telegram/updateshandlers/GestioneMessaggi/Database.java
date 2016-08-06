@@ -1,5 +1,8 @@
 package org.telegram.updateshandlers.GestioneMessaggi;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import eu.trentorise.smartcampus.mobilityservice.MobilityDataService;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import eu.trentorise.smartcampus.mobilityservice.model.TaxiContact;
@@ -9,31 +12,104 @@ import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
 import org.telegram.telegrambots.api.objects.Location;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by gekoramy
  */
 public class Database {
 
-    private static final String AUTOBUS_ID = "12";
-    private static final String TRAINS_ID_BV = "6";
-    private static final String TRAINS_ID_TB = "5";
-    private static final String TRAINS_ID_TM = "10";
-    private static final String SERVER_URL = "https://tn.smartcommunitylab.it/core.mobility";
-    private static List<Parking> parkings = new ArrayList<>();
-    private static List<Parking> bikeSharings = new ArrayList<>();
-    private static List<TaxiContact> taxi = new ArrayList<>();
-    private static List<Route> autobus = new ArrayList<>();
-    private static List<Route> trains_BV = new ArrayList<>();
-    private static List<Route> trains_TM = new ArrayList<>();
-    private static List<Route> trains_TB = new ArrayList<>();
-    private static List<Route> trains = new ArrayList<>();
-    private static MobilityDataService dataService = new MobilityDataService(SERVER_URL);
-
     // TODO List of errors in Autobus List:
     // TODO - A, B, C   : always return a empty TimeTable
     // TODO - 1, 14R    : List<Stops>.size() != List<Times>.size()
     // TODO - FuR       : doesn't appear in List<Route>
+
+    // region final
+
+    private static final String AGENCY_AUTOBUS = "12";
+    private static final String AGENCY_TRAINS_BV = "6";
+    private static final String AGENCY_TRAINS_TB = "5";
+    private static final String AGENCY_TRAINS_TM = "10";
+    private static final String AGENCY_PARKINGS = "COMUNE_DI_TRENTO";
+    private static final String AGENCY_BIKESHARINGS = "BIKE_SHARING_TOBIKE_TRENTO";
+    private static final String SERVER_URL = "https://tn.smartcommunitylab.it/core.mobility";
+
+    // endregion final
+
+    private static MobilityDataService dataService = new MobilityDataService(SERVER_URL);
+
+    private static LoadingCache<String, List<TaxiContact>> cacheTaxiContacts;
+    private static LoadingCache<String, List<Parking>> cacheParkings;
+    private static LoadingCache<String, List<Parking>> cacheBikeSharings;
+    private static LoadingCache<String, List<Route>> cacheAutobusRoutes;
+    private static LoadingCache<String, List<Route>> cacheTrainsRoutes;
+    private static LoadingCache<String, TimeTable> cacheAutobusTimetables;
+    private static LoadingCache<String, TimeTable> cacheTrainTimetables;
+
+    static {
+        cacheTaxiContacts = CacheBuilder.newBuilder().expireAfterWrite(12, TimeUnit.HOURS).build(new CacheLoader<String, List<TaxiContact>>() {
+            @Override
+            public List<TaxiContact> load(String s) throws Exception {
+                return downloadTaxiContacts();
+            }
+        });
+
+        cacheParkings = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build(new CacheLoader<String, List<Parking>>() {
+            @Override
+            public List<Parking> load(String agencyId) throws Exception {
+                return downloadParkings(agencyId);
+            }
+        });
+
+        cacheBikeSharings = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).build(new CacheLoader<String, List<Parking>>() {
+            @Override
+            public List<Parking> load(String agencyId) throws Exception {
+                return downloadBikeSharing(agencyId);
+            }
+        });
+
+        cacheAutobusRoutes = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build(new CacheLoader<String, List<Route>>() {
+            @Override
+            public List<Route> load(String agencyId) throws Exception {
+                return downloadAutbusRoute(agencyId);
+            }
+        });
+
+        cacheTrainsRoutes = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.DAYS).build(new CacheLoader<String, List<Route>>() {
+            @Override
+            public List<Route> load(String agencyId) throws Exception {
+                return downloadTrainsRoute(agencyId);
+            }
+        });
+
+
+        cacheAutobusTimetables = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).build(new CacheLoader<String, TimeTable>() {
+            @Override
+            public TimeTable load(String routeId) throws Exception {
+                return downloadAutobusTimetable(routeId);
+            }
+        });
+
+        cacheTrainTimetables = CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).build(new CacheLoader<String, TimeTable>() {
+            @Override
+            public TimeTable load(String routeId) throws Exception {
+                return downloadTrainTimetable(routeId);
+            }
+        });
+    }
+
+    // region utilities
+
+    private static List<Route> allTrains() throws ExecutionException {
+        List<String> agencyIds = Arrays.asList(AGENCY_TRAINS_BV, AGENCY_TRAINS_TB, AGENCY_TRAINS_TM);
+        List<Route> trains = new ArrayList<>();
+
+        for (String agency : agencyIds)
+            trains.addAll(cacheTrainsRoutes.get(agency));
+
+        return trains;
+    }
 
     private static String capitalize(String s) {
         String text = "";
@@ -47,30 +123,49 @@ public class Database {
         return s.replace("/", " / ").trim();
     }
 
-    public static List<TaxiContact> getTaxiInfo() throws SecurityException, MobilityServiceException {
-        return taxi = dataService.getTaxiAgencyContacts(null);
+    private static String getTrainAgencyId(String trainId) throws ExecutionException {
+        List<String> agencyIds = Arrays.asList(AGENCY_TRAINS_BV, AGENCY_TRAINS_TB, AGENCY_TRAINS_TM);
+
+        for (String ageny : agencyIds)
+            for (Route r : cacheTrainsRoutes.get(ageny))
+                if (r.getId().getId().equals(trainId))
+                    return ageny;
+
+        return null;
     }
 
-    public static List<Parking> getParkings() throws SecurityException, MobilityServiceException {
-        return parkings = dataService.getParkings("COMUNE_DI_TRENTO", null);
+    private static String getAutobusRouteId(String routeId, Boolean isAndata) throws ExecutionException {
+        for (Route route : cacheAutobusRoutes.get(AGENCY_AUTOBUS)) {
+            if (route.getRouteShortName().equals(routeId))
+                if (route.getId().getId().endsWith("C"))
+                    return route.getId().getId();
+                else if (isAndata && route.getId().getId().endsWith("A"))
+                    return route.getId().getId();
+                else if (!isAndata && route.getId().getId().endsWith("R"))
+                    return route.getId().getId();
+        }
+        return null;
     }
 
-    public static List<Parking> getBikeSharing() throws SecurityException, MobilityServiceException {
-        return bikeSharings = dataService.getBikeSharings("BIKE_SHARING_TOBIKE_TRENTO", null);
+    // endregion utilities
+
+    // region download
+
+    private static List<TaxiContact> downloadTaxiContacts() throws SecurityException, MobilityServiceException {
+        return dataService.getTaxiAgencyContacts(null);
     }
 
-    public static List<Parking> getNear(List<Parking> zone, Location loc) {
-        List<Parking> near = new ArrayList<>();
-
-        for (Parking el : zone)
-            if (DistanceCalculator.distance(loc.getLatitude(), loc.getLongitude(), el.getPosition()[0], el.getPosition()[1], "K") <= 1.5)
-                near.add(el);
-        return near;
+    private static List<Parking> downloadParkings(String agencyId) throws SecurityException, MobilityServiceException {
+        return dataService.getParkings(agencyId, null);
     }
 
-    public static List<Route> getAutbusRoute() throws SecurityException, MobilityServiceException {
+    private static List<Parking> downloadBikeSharing(String agencyId) throws SecurityException, MobilityServiceException {
+        return dataService.getBikeSharings(agencyId, null);
+    }
 
-        autobus = dataService.getRoutes(AUTOBUS_ID, null);
+    private static List<Route> downloadAutbusRoute(String agencyId) throws SecurityException, MobilityServiceException {
+
+        List<Route> autobus = dataService.getRoutes(agencyId, null);
 
         Map<String, String> routeSymId;
         {
@@ -92,96 +187,88 @@ public class Database {
         return autobus;
     }
 
-    public static List<Route> getTrainsRoute() throws SecurityException, MobilityServiceException {
-        trains.clear();
-        trains_BV.clear();
-        trains_TB.clear();
-        trains_TM.clear();
+    private static List<Route> downloadTrainsRoute(String agencyId) throws SecurityException, MobilityServiceException {
+        List<Route> list = new ArrayList<>();
 
+        list.addAll(dataService.getRoutes(agencyId, null));
 
-        trains_BV.addAll(dataService.getRoutes(TRAINS_ID_BV, null));
-        trains_TB.addAll(dataService.getRoutes(TRAINS_ID_TB, null));
-        trains_TM.addAll(dataService.getRoutes(TRAINS_ID_TM, null));
-
-        for (Route r : trains_BV) {
+        for (Route r : list) {
             r.setRouteLongName(addSpace(r.getRouteLongName()));
             r.setRouteLongName(capitalize(r.getRouteLongName()));
         }
 
-
-        for (Route r : trains_TB) {
-            r.setRouteLongName(addSpace(r.getRouteLongName()));
-            r.setRouteLongName(capitalize(r.getRouteLongName()));
-        }
-
-        for (Route r : trains_TM) {
-            r.setRouteLongName(addSpace(r.getRouteLongName()));
-            r.setRouteLongName(capitalize(r.getRouteLongName()));
-        }
-
-
-        trains.addAll(trains_BV);
-        trains.addAll(trains_TB);
-        trains.addAll(trains_TM);
-
-        return trains;
+        return list;
     }
 
-    public static TimeTable getAutobusTimetable(String routeId) throws MobilityServiceException {
-        System.out.println(routeId);
-        return dataService.getTimeTable(AUTOBUS_ID, routeId, System.currentTimeMillis(), null);
+    private static TimeTable downloadAutobusTimetable(String routeId) throws MobilityServiceException {
+        return dataService.getTimeTable(AGENCY_AUTOBUS, routeId, System.currentTimeMillis(), null);
     }
 
-    public static TimeTable getTrainTimetable(String routeId) throws MobilityServiceException {
-        System.out.println(routeId);
+    private static TimeTable downloadTrainTimetable(String routeId) throws MobilityServiceException, ExecutionException {
         return dataService.getTimeTable(getTrainAgencyId(routeId), routeId, System.currentTimeMillis(), null);
     }
 
-    public static Boolean hasReturn(String routeId) {
-        for (Route route : autobus)
-            if (route.getRouteShortName().equals(routeId) && (route.getId().getId().endsWith("A") || route.getId().getId().endsWith("R")))
-                return true;
-        return false;
+    // endregion download
+
+    // region gets
+
+    public static List<TaxiContact> getTaxiContacts() throws ExecutionException {
+        return cacheTaxiContacts.get("0");
     }
 
-    public static String getAutobusRouteId(String routeId, Boolean isAndata) throws MobilityServiceException {
-        autobus = getAutbusRoute();
-        for (Route route : autobus) {
-            if (route.getRouteShortName().equals(routeId))
-                if (route.getId().getId().endsWith("C"))
-                    return route.getId().getId();
-                else if (isAndata && route.getId().getId().endsWith("A"))
-                    return route.getId().getId();
-                else if (!isAndata && route.getId().getId().endsWith("R"))
-                    return route.getId().getId();
-        }
-        return null;
+    public static List<Route> getAutobusRoutes() throws ExecutionException {
+        return cacheAutobusRoutes.get(AGENCY_AUTOBUS);
     }
 
-    public static String getTrainRouteId(String routeId) {
-        for (Route route : trains)
+    public static List<Route> getTrainsRoutes() throws ExecutionException {
+        return allTrains();
+    }
+
+    public static List<Parking> getParkings() throws ExecutionException {
+        return cacheParkings.get(AGENCY_PARKINGS);
+    }
+
+    public static List<Parking> getBikeSharings() throws ExecutionException {
+        return cacheBikeSharings.get(AGENCY_BIKESHARINGS);
+    }
+
+    public static TimeTable getAutobusTimetable(String routeId) throws ExecutionException {
+        return cacheAutobusTimetables.get(routeId);
+    }
+
+    public static TimeTable getTrainTimetable(String routeId) throws ExecutionException {
+        return cacheTrainTimetables.get(routeId);
+    }
+
+    // endregion gets
+
+    // region finds
+
+    public static List<Parking> findNear(List<Parking> zone, Location loc) {
+        List<Parking> near = new ArrayList<>();
+
+        for (Parking el : zone)
+            if (DistanceCalculator.distance(loc.getLatitude(), loc.getLongitude(), el.getPosition()[0], el.getPosition()[1], "K") <= 1.5)
+                near.add(el);
+        return near;
+    }
+
+    public static String findAutobusAndataRouteId(String routeId) throws ExecutionException {
+        return getAutobusRouteId(routeId, true);
+    }
+
+    public static String findAutobusRitornoRouteId(String routeId) throws ExecutionException {
+        return getAutobusRouteId(routeId, false);
+    }
+
+    public static String findTrainRouteId(String routeId) throws ExecutionException {
+        for (Route route : allTrains())
             if (route.getRouteLongName().equals(routeId))
                 return route.getId().getId();
         return null;
     }
 
-    private static String getTrainAgencyId(String trainId) {
-        for (Route r : trains_BV)
-            if (r.getId().getId().equals(trainId))
-                return TRAINS_ID_BV;
-
-        for (Route r : trains_TB)
-            if (r.getId().getId().equals(trainId))
-                return TRAINS_ID_TB;
-
-        for (Route r : trains_TM)
-            if (r.getId().getId().equals(trainId))
-                return TRAINS_ID_TM;
-
-        return null;
-    }
-
-    public static int getCurrentIndex(TimeTable timeTable) {
+    public static int findCurrentIndex(TimeTable timeTable) {
         int hours, minutes;
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(System.currentTimeMillis());
@@ -200,5 +287,7 @@ public class Database {
 
         return 0;
     }
+
+    // endregion finds
 
 }

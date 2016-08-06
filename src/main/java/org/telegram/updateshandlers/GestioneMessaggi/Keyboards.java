@@ -12,7 +12,6 @@ import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
 
@@ -164,8 +163,8 @@ public class Keyboards {
         ReplyKeyboardMarkup replyKeyboardMarkup = keyboard();
         List<KeyboardRow> keyboard = new ArrayList<>();
 
-        // EQUALS for (Route r : trains) keyboard.add(keyboardRowButton(r.getRouteLongName()));
-        keyboard.addAll(trains.stream().map(r -> keyboardRowButton(r.getRouteLongName())).collect(Collectors.toList()));
+        for (Route r : trains)
+            keyboard.add(keyboardRowButton(r.getRouteLongName()));
 
         keyboard.add(keyboardRowButton(BACKCOMMAND));
         replyKeyboardMarkup.setKeyboard(keyboard);
@@ -226,7 +225,7 @@ public class Keyboards {
 
         for (InlineKeyboardButton btn : indexes)
             if (btn.getText().equals(Integer.toString(chosen)))
-                btn.setText("· " + btn.getText() + " ·").setCallbackData(id + '~' + '·' + '~' + Integer.toString(-1));
+                btn.setText("· " + btn.getText() + " ·").setCallbackData(id + '~' + CURRENT + '~' + Integer.toString(-1));
 
         // endregion indexes
         inlineKeyboard.add(indexes);
@@ -266,6 +265,7 @@ public class Keyboards {
     public static InlineKeyboardMarkup inlineKeyboardTrain(String id, int chosen, int lastValue) {
         return inlineKeyboard(id, chosen, lastValue, false);
     }
+
     // endregion inlineKeyboard
 
 }
