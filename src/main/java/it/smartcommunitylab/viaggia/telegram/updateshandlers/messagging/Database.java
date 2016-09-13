@@ -1,4 +1,4 @@
-package org.telegram.updateshandlers.GestioneMessaggi;
+package it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -139,9 +139,9 @@ public class Database {
             if (route.getRouteShortName().equals(routeId))
                 if (route.getId().getId().endsWith("C"))
                     return route.getId().getId();
-                else if (isAndata && route.getId().getId().endsWith("A"))
+                else if (isAndata && route.getId().getId().toUpperCase().endsWith("A"))
                     return route.getId().getId();
-                else if (!isAndata && route.getId().getId().endsWith("R"))
+                else if (!isAndata && route.getId().getId().toUpperCase().endsWith("R"))
                     return route.getId().getId();
         }
         return null;
@@ -170,8 +170,8 @@ public class Database {
         Map<String, String> routeSymId;
         {
             routeSymId = new HashMap<>();
-            routeSymId.put("_A", "%20Ac");  // ERROR, tried : '%20', '%2520', '% ', '_' + 'AC', 'Ac'
-            routeSymId.put("_B", "%20Bc");  // ERROR, tried : '%20', '%2520', '% ', '_' + 'AC', 'Ac'
+            routeSymId.put("_A", "%20AC");  // ERROR, tried : '%20', '%2520', '% ', '_' + 'AC', 'Ac'
+            routeSymId.put("_B", "%20BC");  // ERROR, tried : '%20', '%2520', '% ', '_' + 'AC', 'Ac'
             routeSymId.put("NPA", "NPC");
             routeSymId.put("02", "02C");
             routeSymId.put("1A", "01A");

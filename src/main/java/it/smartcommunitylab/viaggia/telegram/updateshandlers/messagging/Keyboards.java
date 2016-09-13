@@ -1,7 +1,13 @@
-package org.telegram.updateshandlers.GestioneMessaggi;
+package it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging;
 
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.commons.lang.math.NumberUtils;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -9,11 +15,7 @@ import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboar
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-
-import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.*;
 
 /**
  * Created by gekoramy
@@ -134,7 +136,12 @@ public class Keyboards {
             if (NumberUtils.isNumber(string)) autobusNum.add(string);
             else autobusTxt.add(string);
 
-        autobusNum.sort(Comparator.comparing(Integer::parseInt));
+        Collections.sort(autobusNum, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				return Integer.parseInt(o1) - Integer.parseInt(o2);
+			}
+		});
 
         autobusWithoutRepeats.clear();
         autobusWithoutRepeats.addAll(autobusNum);

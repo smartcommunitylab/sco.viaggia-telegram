@@ -35,3 +35,6 @@ src/main/java/org/telegram/BotConfig.java
 *.jks
 *.cer
 *.pem
+/.settings/
+/.classpath
+/.project

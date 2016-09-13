@@ -1,4 +1,4 @@
-package org.telegram.updateshandlers.GestioneMessaggi;
+package it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging;
 
 /**
  * Created by gekoramy

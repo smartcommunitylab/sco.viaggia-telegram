@@ -1,10 +1,64 @@
-package org.telegram.updateshandlers;
+package it.smartcommunitylab.viaggia.telegram.updateshandlers;
 
-import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
-import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.ANDATA;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.AUTOBUSCOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.BACKCOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.BIKESHARINGSCOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.CURRENT;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.ENGLISH;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.ESPANOL;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.HELPCOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.INDEX;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.ITALIANO;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.LANGUAGECOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.NOW;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.PARKINGSCOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.RETURN;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.STARTCOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.TAXICOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Commands.TRAINSCOMMAND;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.inlineKeyboardAutobus;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.inlineKeyboardTrain;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.keyboardAutobus;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.keyboardBikeSharings;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.keyboardLanguage;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.keyboardParkings;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.keyboardStart;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards.keyboardTrains;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textAutobus;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textAutobusHelp;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textBikeSharings;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textBikeSharingsHelp;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textBikeSharingsNear;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textError;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textLanguage;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textLanguageChange;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textParking;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textParkingsHelp;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textParkingsNear;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStart;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStartAutobus;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStartBikeSharings;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStartHelp;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStartMain;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStartParkings;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStartTaxi;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textStartTrains;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textTrain;
+import static it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts.textTrainHelp;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
-import org.telegram.BotConfig;
+import it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Current;
+import it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Database;
+import it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Keyboards;
+import it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Language;
+import it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Menu;
+import it.smartcommunitylab.viaggia.telegram.updateshandlers.messagging.Texts;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 import org.telegram.telegrambots.TelegramApiException;
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
@@ -16,29 +70,31 @@ import org.telegram.telegrambots.api.objects.Update;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.updateshandlers.GestioneMessaggi.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
-import static org.telegram.updateshandlers.GestioneMessaggi.Commands.*;
-import static org.telegram.updateshandlers.GestioneMessaggi.Keyboards.*;
-import static org.telegram.updateshandlers.GestioneMessaggi.Texts.*;
+import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
+import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 
 /**
  * Created by gekoramy
  */
-public class GestioneHandlers extends TelegramLongPollingBot {
+public class ViaggiaBot extends TelegramLongPollingBot {
 
-    @Override
+	private String token, name;
+	
+    public ViaggiaBot(String name, String token) {
+		super();
+		this.token = token;
+		this.name = name;
+	}
+
+	@Override
     public String getBotUsername() {
-        return BotConfig.USERNAMEMYPROJECT;
+        return name;
     }
 
     @Override
     public String getBotToken() {
-        return BotConfig.TOKENMYPROJECT;
+        return token;
     }
 
     @Override
@@ -188,11 +244,14 @@ public class GestioneHandlers extends TelegramLongPollingBot {
             case TRAINS:
                 error(message);
                 break;
+            case LANGUAGE:
+                error(message);
+                break;
             case PARKINGS:
-                sendMessageDefault(message, Keyboards.keyboardParkings(message.getChatId(), Database.getParkings()), textParkingsNear(Database.findNear(Database.getParkings(), message.getLocation())));
+                sendMessageDefault(message, Keyboards.keyboardParkings(message.getChatId(), Database.getParkings()), textParkingsNear(Database.findNear(Database.getParkings(), message.getLocation()), Current.getLanguage(message.getChatId())));
                 break;
             case BIKESHARINGS:
-                sendMessageDefault(message, Keyboards.keyboardBikeSharings(message.getChatId(), Database.getBikeSharings()), textBikeSharingsNear(Database.findNear(Database.getBikeSharings(), message.getLocation())));
+                sendMessageDefault(message, Keyboards.keyboardBikeSharings(message.getChatId(), Database.getBikeSharings()), textBikeSharingsNear(Database.findNear(Database.getBikeSharings(), message.getLocation()),Current.getLanguage(message.getChatId())));
                 break;
         }
     }
@@ -335,7 +394,7 @@ public class GestioneHandlers extends TelegramLongPollingBot {
 
     private void zone(Message message, Menu menu) throws TelegramApiException, MobilityServiceException, ExecutionException {
         boolean flag = false;
-        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharings() : new ArrayList<>();
+        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharings() : new ArrayList<Parking>();
 
         String text = message.getText();
 
@@ -343,11 +402,13 @@ public class GestioneHandlers extends TelegramLongPollingBot {
             if (p.getName().equals(text)) {
                 switch (menu) {
                     case PARKINGS:
-                        sendMessageDefault(message, keyboardParkings(message.getChatId(), parkings), textParking(p));
+                        sendMessageDefault(message, keyboardParkings(message.getChatId(), parkings), textParking(p,Current.getLanguage(message.getChatId())));
                         break;
                     case BIKESHARINGS:
-                        sendMessageDefault(message, keyboardBikeSharings(message.getChatId(), parkings), textBikeSharings(p));
+                        sendMessageDefault(message, keyboardBikeSharings(message.getChatId(), parkings), textBikeSharings(p, Current.getLanguage(message.getChatId())));
                         break;
+                    default: 
+                    	break;    
                 }
                 sendVenueDefault(message, (float) p.getPosition()[0], (float) p.getPosition()[1]);
                 flag = true;
