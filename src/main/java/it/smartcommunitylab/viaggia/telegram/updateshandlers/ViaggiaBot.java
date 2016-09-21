@@ -151,6 +151,9 @@ public class ViaggiaBot extends TelegramLongPollingBot {
                                 Current.setLanguage(chatId, Language.ESPANOL);
                                 sendMessageDefault(message, keyboardLanguage(chatId), textLanguageChange(Current.getLanguage(chatId)));
                                 break;
+                            default:
+                                sendMessageDefaultWithReply(message, keyboardStart(chatId), textError(Current.getLanguage(chatId)));
+                                break;
                         }
                         // endregion menu.LANGUAGE
                         break;
@@ -248,10 +251,10 @@ public class ViaggiaBot extends TelegramLongPollingBot {
                 error(message);
                 break;
             case PARKINGS:
-                sendMessageDefault(message, Keyboards.keyboardParkings(message.getChatId(), Database.getParkings()), textParkingsNear(Database.findNear(Database.getParkings(), message.getLocation()), Current.getLanguage(message.getChatId())));
+                sendMessageDefault(message, Keyboards.keyboardParkings(message.getChatId(), Database.getParkings()), textParkingsNear(Database.findNear(Database.getParkings(), message.getLocation(), 1.5), Current.getLanguage(message.getChatId())));
                 break;
             case BIKESHARINGS:
-                sendMessageDefault(message, Keyboards.keyboardBikeSharings(message.getChatId(), Database.getBikeSharings()), textBikeSharingsNear(Database.findNear(Database.getBikeSharings(), message.getLocation()),Current.getLanguage(message.getChatId())));
+                sendMessageDefault(message, Keyboards.keyboardBikeSharings(message.getChatId(), Database.getBikeSharings()), textBikeSharingsNear(Database.findNear(Database.getBikeSharings(), message.getLocation(), 0.5),Current.getLanguage(message.getChatId())));
                 break;
         }
     }
@@ -394,7 +397,7 @@ public class ViaggiaBot extends TelegramLongPollingBot {
 
     private void zone(Message message, Menu menu) throws TelegramApiException, MobilityServiceException, ExecutionException {
         boolean flag = false;
-        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharings() : new ArrayList<Parking>();
+        List<Parking> parkings = menu == Menu.PARKINGS ? Database.getParkings() : menu == Menu.BIKESHARINGS ? Database.getBikeSharings() : new ArrayList<>();
 
         String text = message.getText();
 

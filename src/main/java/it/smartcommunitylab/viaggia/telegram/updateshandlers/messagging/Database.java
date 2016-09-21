@@ -244,11 +244,11 @@ public class Database {
 
     // region finds
 
-    public static List<Parking> findNear(List<Parking> zone, Location loc) {
+    public static List<Parking> findNear(List<Parking> zone, Location loc, double distance) {
         List<Parking> near = new ArrayList<>();
 
         for (Parking el : zone)
-            if (DistanceCalculator.distance(loc.getLatitude(), loc.getLongitude(), el.getPosition()[0], el.getPosition()[1], "K") <= 1.5)
+            if (DistanceCalculator.distance(loc.getLatitude(), loc.getLongitude(), el.getPosition()[0], el.getPosition()[1], "K") <= distance)
                 near.add(el);
         return near;
     }
