@@ -14,10 +14,8 @@ public class Main {
     private static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-//        String botName = "asdfjhgasdfjkhgasdfjhgasdfbot";
-        String botName = "SArchonBot";
-//        String botToken = "262858092:AAFUJEvBA3-IetGi7upGZtgpfeGAsi2_g68";
-        String botToken = "398109514:AAE8rW02WkXK_62V8KwTx9T5s9YL-6yjaSk";
+        String botName = "";
+        String botToken = "";
 
         if (args != null && args.length == 2) {
             botName = args[0].trim();
