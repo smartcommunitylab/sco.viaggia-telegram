@@ -59,6 +59,10 @@ public class ContributeCommand extends UseCaseCommand {
                                             mBB.getMessage("translate"),
                                             "crowdin.com/project/viaggiatrentobot"
                                     )
+                                    .addFullRowSwitchInlineButton(
+                                            mBB.getMessage("share"),
+                                            ""
+                                    )
                                     .build(true)
                     ));
         } catch (EmptyKeyboardException e) {
