@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Edited by Luca Mosetti
+ */
 public class DistanceCalculator {
 
     private double distance(double lat1, double lon1, double lat2, double lon2, Unit unit) {

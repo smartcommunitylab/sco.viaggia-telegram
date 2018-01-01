@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 /*package*/ class BusDataManagement {
 

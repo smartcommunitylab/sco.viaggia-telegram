@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class ParkingCommand extends AbstractParkingCommand {
 
-    private static final Command COMMAND_ID = new Command("parking", "parkingdescription");
+    private static final Command COMMAND_ID = new Command("parking", "parking_description");
 
     public ParkingCommand() {
         super(COMMAND_ID, 2, Unit.KILOMETER);
@@ -32,7 +32,7 @@ public class ParkingCommand extends AbstractParkingCommand {
     @Override
     protected String slotsToString(Parking parking) {
         return parking.isMonitored() && parking.getSlotsAvailable() >= 0 ?
-                mBB.getMessage("slotsavailable", Integer.toString(parking.getSlotsAvailable()), Integer.toString(parking.getSlotsTotal())) :
+                mBB.getMessage("slots_available", Integer.toString(parking.getSlotsAvailable()), Integer.toString(parking.getSlotsTotal())) :
                 mBB.getMessage("slots", Integer.toString(parking.getSlotsTotal()));
     }
 }

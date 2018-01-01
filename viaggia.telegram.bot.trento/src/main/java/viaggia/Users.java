@@ -9,7 +9,7 @@ import org.bson.Document;
 import java.util.Locale;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  * <p>
  * When a new conversation with this bot is started
  * there're saved some information about the User (Not the Chat!)

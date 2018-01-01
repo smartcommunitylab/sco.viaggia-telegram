@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class ComparableRoutes extends ArrayList<ComparableRoute> {
 

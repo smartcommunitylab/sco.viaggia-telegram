@@ -27,13 +27,13 @@ import viaggia.utils.MessageBundleBuilder;
 import java.util.*;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class LanguageCommand extends UseCaseCommand implements HandleCallbackQuery {
 
     private final static Logger logger = LoggerFactory.getLogger(LanguageCommand.class);
-    private final static Command COMMAND_ID = new Command("language", "languagedescription");
-    private final static Locale[] languages = {Locale.ITALY, Locale.US};
+    private final static Command COMMAND_ID = new Command("language", "language_description");
+    private final static Locale[] languages = {Locale.ITALY, Locale.US, Locale.FRANCE};
 
     private final MessageBundleBuilder mBB = new MessageBundleBuilder();
     private final InlineKeyboardMarkupBuilder inlineKeyboardMarkupBuilder = new InlineKeyboardMarkupBuilder();
@@ -47,13 +47,13 @@ public class LanguageCommand extends UseCaseCommand implements HandleCallbackQue
     @Override
     public void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
         mBB.setUser(user);
-        execute(absSender, chat);
+        languageMessage(absSender, chat);
     }
 
     @Override
     public void respondMessage(TimedAbsSender absSender, User user, Chat chat, String arguments) {
         mBB.setUser(user);
-        execute(absSender, chat);
+        languageMessage(absSender, chat);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class LanguageCommand extends UseCaseCommand implements HandleCallbackQue
         }
     }
 
-    private void execute(TimedAbsSender absSender, Chat chat) {
+    private void languageMessage(TimedAbsSender absSender, Chat chat) {
         try {
             absSender.execute(new SendMessage()
                     .setChatId(chat.getId())
@@ -106,8 +106,8 @@ public class LanguageCommand extends UseCaseCommand implements HandleCallbackQue
                     .build(true)));
         }
 
-        return inlineKeyboardMarkupBuilder.setColumns(2)
-                .addSeparateRowsKeyboardButtons(buttons)
-                .build();
+        return inlineKeyboardMarkupBuilder
+                .addSeparateRowsKeyboardButtons(3, buttons)
+                .build(true);
     }
 }

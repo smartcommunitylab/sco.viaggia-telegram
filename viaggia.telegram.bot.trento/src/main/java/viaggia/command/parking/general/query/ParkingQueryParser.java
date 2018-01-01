@@ -3,7 +3,7 @@ package viaggia.command.parking.general.query;
 import bot.model.query.Query;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  * <p>
  * ParkingQueryParser for ParkingCommand in general
  * (Bike and ParkingCommand information)

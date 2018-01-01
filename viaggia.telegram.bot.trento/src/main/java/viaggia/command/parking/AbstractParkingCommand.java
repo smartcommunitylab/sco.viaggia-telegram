@@ -49,7 +49,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public abstract class AbstractParkingCommand extends UseCaseCommand implements HandleLocation, HandleCallbackQuery, HandleInlineQuery {
     private static final Logger logger = LoggerFactory.getLogger(AbstractParkingCommand.class);
@@ -280,14 +280,13 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
         replyKeyboardMarkupBuilder
                 .setResizeKeyboard(true)
                 .setOneTimeKeyboard(true)
-                .setColumns(2)
-                .setKeyboardButtons(parkings);
+                .addKeyboardButtons(2, parkings);
 
         if (chat.isUserChat())
             replyKeyboardMarkupBuilder
                     .addRequestLocationButton();
 
-        return replyKeyboardMarkupBuilder.build();
+        return replyKeyboardMarkupBuilder.build(true);
     }
 
     private InlineKeyboardMarkup inlineKeyboardMarkup(Parking parking) throws EmptyKeyboardException {
@@ -297,7 +296,7 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
                         .setName(parking.getName())
                         .setAvailable(available(parking))
                         .build(true))
-                .build();
+                .build(true);
     }
 
     // endregion keyboard

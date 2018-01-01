@@ -35,14 +35,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  * <p>
  * Shows a list of all registered commands
  */
 public class StartCommand extends UseCaseCommand implements HandleCallbackQuery, HandleInlineQuery {
 
     private static final Logger logger = LoggerFactory.getLogger(StartCommand.class);
-    private static final Command COMMAND_ID = new Command("start", "startdescrition");
+    private static final Command COMMAND_ID = new Command("start", "start_description");
     private static final String SWITCH_HELPER = "SWITCH_HELPER";
 
     private final MessageBundleBuilder mBB = new MessageBundleBuilder();
@@ -63,7 +63,7 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
     @Override
     public void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
         mBB.setUser(user);
-        execute(absSender, chat);
+        startMessage(absSender, chat);
     }
 
     @Override
@@ -75,12 +75,12 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
                     absSender.execute(new SendMessage()
                             .setChatId(chat.getId())
                             .setParseMode(ParseMode.MARKDOWN)
-                            .setText(mBB.getMessage("inlinehelp"))
+                            .setText(mBB.getMessage("inline_help"))
                             .setReplyMarkup(useCaseCommandsInlineKeyboard()));
                     break;
 
                 default:
-                    execute(absSender, chat);
+                    startMessage(absSender, chat);
                     break;
             }
         } catch (EmptyKeyboardException e) {
@@ -96,7 +96,7 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
         try {
             SendMessage sendMessage = new SendMessage()
                     .setChatId(cbq.getMessage().getChatId())
-                    .setText(mBB.getMessage("tapinlinebtn"))
+                    .setText(mBB.getMessage("tap_inline"))
                     .setReplyMarkup(useCaseCommandInlineKeyboard(query.getUseCase()));
 
             AnswerCallbackQuery answer = new AnswerCallbackQuery()
@@ -119,57 +119,47 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
                 .setSwitchPmText(switchHelper()));
     }
 
-    private void execute(TimedAbsSender absSender, Chat chat) {
-        StringBuilder helpMessageBuilder = new StringBuilder();
-        helpMessageBuilder
-                .append(mBB.getMessage("introduction"))
-                .append("\n\n")
-                .append(mBB.getMessage("commandsintro"))
-                .append("\n")
-                .append(commandRegistry.getHelpMessage(mBB))
-                .append(mBB.getMessage("people", Long.toString(Users.count())))
-                .append("\n\n")
-                .append(mBB.getMessage("credits"));
+    private void startMessage(TimedAbsSender absSender, Chat chat) {
+        String helpMessageBuilder = mBB.getMessage("introduction") + "\n\n" +
+                mBB.getMessage("commands_intro") + "\n\n" +
+                mBB.getMessage("people", Long.toString(Users.count())) + "\n\n" +
+                mBB.getMessage("credits");
 
+        absSender.execute(new SendMessage()
+                .setChatId(chat.getId())
+                .setParseMode(ParseMode.MARKDOWN)
+                .setText(helpMessageBuilder)
+                .disableWebPagePreview()
+                .setReplyMarkup(new ReplyKeyboardRemove()));
+
+        newsMessage(absSender, chat.getId());
+
+        Chats.setCommand(chat.getId(), COMMAND_ID);
+    }
+
+    private void newsMessage(TimedAbsSender absSender, long chatId) {
         try {
             absSender.execute(new SendMessage()
-                    .setChatId(chat.getId())
+                    .setChatId(chatId)
                     .setParseMode(ParseMode.MARKDOWN)
-                    .setText(helpMessageBuilder.toString())
-                    .disableWebPagePreview()
-                    .setReplyMarkup(new ReplyKeyboardRemove()));
-
-            absSender.execute(new SendMessage()
-                    .setChatId(chat.getId())
-                    .setParseMode(ParseMode.MARKDOWN)
-                    .setText(mBB.getMessage("contribute"))
+                    .setText(mBB.getMessage("news"))
                     .setReplyMarkup(inlineKeyboardMarkupBuilder
                             .addFullRowUrlInlineButton(
-                                    mBB.getMessage("donates"),
-                                    "paypal.me/LucaMosetti"
-                            )
-                            .addFullRowUrlInlineButton(
-                                    mBB.getMessage("report"),
-                                    "trello.com/b/jaVW8Tr5"
-                            )
-                            .addFullRowUrlInlineButton(
-                                    mBB.getMessage("translate"),
-                                    "crowdin.com/project/viaggiatrentobot"
+                                    mBB.getMessage("update"),
+                                    "t.me/ViaggiaTrentoChannel"
                             )
                             .addFullRowSwitchInlineButton(
                                     mBB.getMessage("share"),
                                     ""
                             )
-                            .build()));
-
-            Chats.setCommand(chat.getId(), COMMAND_ID);
+                            .build(true)));
         } catch (EmptyKeyboardException e) {
-            logger.error(e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private String switchHelper() {
-        StringBuilder helpMessageBuilder = new StringBuilder(mBB.getMessage("type"));
+        StringBuilder helpMessageBuilder = new StringBuilder(mBB.getMessage("type")).append(" ");
 
         for (UseCaseCommand useCase : commandRegistry.getRegisteredCommands()) {
             if (useCase instanceof HandleInlineQuery && !useCase.getCommand().equals(getCommand()))
@@ -186,25 +176,25 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
     private InlineKeyboardMarkup useCaseCommandInlineKeyboard(String useCase) throws EmptyKeyboardException {
         return inlineKeyboardMarkupBuilder
                 .addFullRowSwitchInlineButton(
-                        mBB.getMessage("type") + useCase,
+                        mBB.getMessage("type") + " " + useCase,
                         useCase
-                ).build();
+                ).build(true);
     }
 
     private InlineKeyboardMarkup useCaseCommandsInlineKeyboard() throws EmptyKeyboardException {
         List<Map.Entry<String, String>> buttons = new ArrayList<>();
 
         for (UseCaseCommand useCase : commandRegistry.getRegisteredCommands()) {
-            if (useCase instanceof HandleCallbackQuery && !useCase.getCommand().equals(getCommand()))
+            if (useCase instanceof HandleInlineQuery && !useCase.getCommand().equals(getCommand()))
                 buttons.add(new AbstractMap.SimpleEntry<>(useCase.getCommand().getCommandIdentifier(), startQueryBuilder
                         .setCommand(getCommand())
                         .setUseCase(useCase.getCommand().getCommandIdentifier())
                         .build(true)));
         }
 
-        return inlineKeyboardMarkupBuilder.setColumns(2)
-                .addSeparateRowsKeyboardButtons(buttons)
-                .build();
+        return inlineKeyboardMarkupBuilder
+                .addSeparateRowsKeyboardButtons(2, buttons)
+                .build(true);
     }
 
     // endregion bot.keyboard
