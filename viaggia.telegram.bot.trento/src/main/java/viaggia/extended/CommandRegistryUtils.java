@@ -16,8 +16,8 @@ import java.util.List;
 public class CommandRegistryUtils {
 
     private final CommandRegistry commandRegistry;
-    private final List<Command> commands = new ArrayList<>();
-    private final List<Command> tmp = new ArrayList<>();
+    private List<Command> commands;
+    private List<Command> tmp;
 
     public CommandRegistryUtils(CommandRegistry commandRegistry) {
         this.commandRegistry = commandRegistry;
@@ -26,6 +26,8 @@ public class CommandRegistryUtils {
     }
 
     public String getHelpMessage(MessageBundleBuilder mBB) {
+        commands = new ArrayList<>();
+        tmp = new ArrayList<>();
 
         commands.add(new Command("start", "start_description"));
         commands.add(new Command("help", "help_description"));
