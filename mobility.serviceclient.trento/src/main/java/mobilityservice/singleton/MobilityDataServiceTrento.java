@@ -27,6 +27,8 @@ public class MobilityDataServiceTrento {
     private static final String AGENCY_PARKING = "COMUNE_DI_TRENTO";
     private static final String AGENCY_BIKE = "BIKE_SHARING_TOBIKE_TRENTO";
 
+    public static final String TRENTO = "TN";
+
     // region comparators
 
     private static final AlphanumComparator<Bus> BUS_COMPARATOR = new AlphanumComparator<Bus>() {
@@ -52,7 +54,7 @@ public class MobilityDataServiceTrento {
 
     // endregion comparators
 
-    /*package*/ MobilityDataServiceTrento() {
+    MobilityDataServiceTrento() {
     }
 
     private static List<Route> correctsIDs(List<Route> routes) {

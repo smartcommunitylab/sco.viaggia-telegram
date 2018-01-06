@@ -13,7 +13,6 @@ public class MobilityDataServiceSingleton {
     private MobilityDataServiceSingleton() {
     }
 
-    /*package*/
     synchronized static MobilityDataService getInstance() {
         return instance == null ? instance = new MobilityDataService(SERVER_URL) : instance;
     }

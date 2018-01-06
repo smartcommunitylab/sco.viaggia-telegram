@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public class StartQuery extends Query implements StartRegex {
 
-    /*package*/ StartQuery(Map map) {
+    StartQuery(Map map) {
         super(map);
     }
 

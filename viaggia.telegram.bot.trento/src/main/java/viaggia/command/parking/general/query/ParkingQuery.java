@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class ParkingQuery extends Query implements ParkingRegex {
 
-    /*package*/ ParkingQuery(Map map) {
+    ParkingQuery(Map map) {
         super(map);
     }
 

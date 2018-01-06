@@ -1,15 +1,10 @@
 package viaggia.command.route.bus;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
-import mobilityservice.model.Bus;
-import mobilityservice.model.Buses;
-import mobilityservice.model.ComparableId;
-import mobilityservice.model.MapTimeTable;
+import mobilityservice.model.*;
 import mobilityservice.singleton.MobilityDataServicePro;
 import mobilityservice.singleton.MobilityDataServiceProSingleton;
 import mobilityservice.singleton.MobilityDataServiceTrento;
@@ -24,24 +19,28 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Luca Mosetti in 2017
  */
-/*package*/ class BusDataManagement {
+class BusDataManagement {
 
     private static final Logger logger = LoggerFactory.getLogger(BusDataManagement.class);
     private static final MobilityDataServiceTrento trento = MobilityDataServiceTrentoSingleton.getInstance();
     private static final MobilityDataServicePro service = MobilityDataServiceProSingleton.getInstance();
-    private static final Supplier<Buses> supplierBuses;
+    private static final LoadingCache<String, Buses> cacheBuses;
     private static final LoadingCache<ComparableId, MapTimeTable> cacheTrentoBusTimetables;
 
     static {
-        supplierBuses = Suppliers.memoizeWithExpiration(() -> {
-            try {
-                return trento.getBuses();
-            } catch (MobilityServiceException e) {
-                e.printStackTrace();
-            }
+        cacheBuses = CacheBuilder.newBuilder()
+                .refreshAfterWrite(1, TimeUnit.DAYS)
+                .build(new CacheLoader<String, Buses>() {
+                    @Override
+                    public Buses load(String key) throws Exception {
+                        Buses tmp = trento.getBuses();
 
-            return null;
-        }, 1, TimeUnit.DAYS);
+                        if (tmp == null)
+                            throw new MobilityServiceException();
+
+                        return tmp;
+                    }
+                });
 
         cacheTrentoBusTimetables = CacheBuilder.newBuilder()
                 .build(new CacheLoader<ComparableId, MapTimeTable>() {
@@ -52,33 +51,30 @@ import java.util.concurrent.TimeUnit;
                 });
     }
 
-    private static void refreshBusTimeTable(ComparableId comparableId) throws ExecutionException {
-        cacheTrentoBusTimetables.refresh(comparableId);
+    private static void refreshBusTimeTable() {
+        try {
+            for (Bus bus : getBusRoutes()) {
+                cacheTrentoBusTimetables.refresh(bus.getDirect().getId());
+
+                if (bus.hasReturn()) {
+                    cacheTrentoBusTimetables.refresh(bus.getReturn().getId());
+                }
+            }
+        } catch (ExecutionException e) {
+            logger.error(e.getMessage());
+        }
     }
 
-    /*package*/
     static void scheduleUpdate() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
-                () -> {
-                    try {
-                        for (Bus bus : getBusRoutes()) {
-                            refreshBusTimeTable(bus.getDirect().getId());
-                            if (bus.hasReturn())
-                                refreshBusTimeTable(bus.getReturn().getId());
-                        }
-                    } catch (ExecutionException e) {
-                        logger.error(e.getMessage());
-                    }
-                }, 0, 1, TimeUnit.HOURS
+                BusDataManagement::refreshBusTimeTable, 0, 1, TimeUnit.HOURS
         );
     }
 
-    /*package*/
     static Buses getBusRoutes() throws ExecutionException {
-        return supplierBuses.get();
+        return cacheBuses.get(MobilityDataServiceTrento.TRENTO);
     }
 
-    /*package*/
     static MapTimeTable getBusTimeTable(ComparableId comparableId) throws ExecutionException {
         return cacheTrentoBusTimetables.get(comparableId);
     }

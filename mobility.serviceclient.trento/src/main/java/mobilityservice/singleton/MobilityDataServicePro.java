@@ -11,7 +11,7 @@ public class MobilityDataServicePro {
 
     private static final MobilityDataService service = MobilityDataServiceSingleton.getInstance();
 
-    /*package*/ MobilityDataServicePro() {
+    MobilityDataServicePro() {
     }
 
     public MapTimeTable getMapTimeTable(String agencyId, String routeId, Long when, String token) throws MobilityServiceException {

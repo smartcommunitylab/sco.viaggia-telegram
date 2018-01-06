@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public class LanguageQuery extends Query implements LanguageRegex {
 
-    /*package*/ LanguageQuery(Map map) {
+    LanguageQuery(Map map) {
         super(map);
     }
 

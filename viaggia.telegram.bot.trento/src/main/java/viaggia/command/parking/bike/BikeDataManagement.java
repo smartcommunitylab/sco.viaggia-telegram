@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Luca Mosetti in 2017
  */
-/*package*/ class BikeDataManagement {
+class BikeDataManagement {
 
     private static final Logger logger = LoggerFactory.getLogger(BikeDataManagement.class);
     private static final MobilityDataServiceTrento trento = MobilityDataServiceTrentoSingleton.getInstance();
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
         return null;
     }, 1, TimeUnit.MINUTES);
 
-    /*package*/
+
     static Parkings getBikes() throws ExecutionException {
         return supplierBikes.get();
     }

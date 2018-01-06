@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Luca Mosetti in 2017
  */
-/*package*/ class ParkingDataManagement {
+class ParkingDataManagement {
 
     private static final Logger logger = LoggerFactory.getLogger(ParkingDataManagement.class);
     private static final MobilityDataServiceTrento trento = MobilityDataServiceTrentoSingleton.getInstance();
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
         return null;
     }, 1, TimeUnit.MINUTES);
 
-    /*package*/
+
     static Parkings getParkings() throws ExecutionException {
         return supplierParkings.get();
     }

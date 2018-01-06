@@ -3,7 +3,7 @@ package viaggia.command.route.general.query;
 /**
  * Created by Luca Mosetti in 2017
  */
-/*package*/ interface RouteRegex {
+interface RouteRegex {
 
     String ID = "ID";
     String AGENCY = "AG";

@@ -15,7 +15,7 @@ public class RouteQuery extends Query implements RouteRegex {
 
     private final ComparableId id;
 
-    /*package*/ RouteQuery(Map map) {
+    RouteQuery(Map map) {
         super(map);
 
         // compatibility
