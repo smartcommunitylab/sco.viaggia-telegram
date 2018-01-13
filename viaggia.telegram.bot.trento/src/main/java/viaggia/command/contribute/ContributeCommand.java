@@ -3,12 +3,12 @@ package viaggia.command.contribute;
 import bot.exception.EmptyKeyboardException;
 import bot.keyboard.InlineKeyboardMarkupBuilder;
 import bot.model.Command;
-import bot.model.UseCaseCommand;
 import bot.timed.TimedAbsSender;
 import org.telegram.telegrambots.api.methods.ParseMode;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Chat;
 import org.telegram.telegrambots.api.objects.User;
+import viaggia.extended.DistinguishedUseCaseCommand;
 import viaggia.utils.MessageBundleBuilder;
 
 /**
@@ -16,7 +16,7 @@ import viaggia.utils.MessageBundleBuilder;
  * <p>
  * Info for people who wants to contribute to @ViaggiaTrentoBot
  */
-public class ContributeCommand extends UseCaseCommand {
+public class ContributeCommand extends DistinguishedUseCaseCommand {
 
     private static final Command COMMAND_ID = new Command("contribute", "contribute_description");
 
@@ -28,20 +28,22 @@ public class ContributeCommand extends UseCaseCommand {
     }
 
     @Override
-    protected void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
+    public void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
+        super.respondCommand(absSender, user, chat);
         mBB.setUser(user);
         contributeCommand(absSender, chat);
     }
 
     @Override
-    public void respondMessage(TimedAbsSender absSender, User user, Chat chat, String arguments) {
+    public void respondText(TimedAbsSender absSender, User user, Chat chat, String arguments) {
+        super.respondText(absSender, user, chat, arguments);
         mBB.setUser(user);
         contributeCommand(absSender, chat);
     }
 
     private void contributeCommand(TimedAbsSender absSender, Chat chat) {
         try {
-            absSender.execute(new SendMessage()
+            absSender.requestExecute(chat.getId(), new SendMessage()
                     .setText(mBB.getMessage("contribute"))
                     .setChatId(chat.getId())
                     .setParseMode(ParseMode.MARKDOWN)

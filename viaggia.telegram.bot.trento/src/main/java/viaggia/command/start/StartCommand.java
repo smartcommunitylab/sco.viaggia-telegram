@@ -9,7 +9,6 @@ import bot.model.handling.HandleCallbackQuery;
 import bot.model.handling.HandleInlineQuery;
 import bot.model.query.Query;
 import bot.timed.Chats;
-import bot.timed.SendBundleAnswerCallbackQuery;
 import bot.timed.TimedAbsSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +16,8 @@ import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.ParseMode;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
-import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Chat;
+import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardRemove;
@@ -27,6 +26,7 @@ import viaggia.command.start.query.StartQuery;
 import viaggia.command.start.query.StartQueryBuilder;
 import viaggia.command.start.query.StartQueryParser;
 import viaggia.extended.CommandRegistryUtils;
+import viaggia.extended.DistinguishedUseCaseCommand;
 import viaggia.utils.MessageBundleBuilder;
 
 import java.util.AbstractMap;
@@ -39,7 +39,7 @@ import java.util.Map;
  * <p>
  * Shows a list of all registered commands
  */
-public class StartCommand extends UseCaseCommand implements HandleCallbackQuery, HandleInlineQuery {
+public class StartCommand extends DistinguishedUseCaseCommand implements HandleCallbackQuery, HandleInlineQuery {
 
     private static final Logger logger = LoggerFactory.getLogger(StartCommand.class);
     private static final Command COMMAND_ID = new Command("start", "start_description");
@@ -57,22 +57,20 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
     }
 
     @Override
-    public void init() {
-    }
-
-    @Override
     public void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
+        super.respondCommand(absSender, user, chat);
         mBB.setUser(user);
         startMessage(absSender, chat);
     }
 
     @Override
-    public void respondMessage(TimedAbsSender absSender, User user, Chat chat, String arguments) {
+    protected void respondText(TimedAbsSender absSender, User user, Chat chat, String text) {
+        super.respondText(absSender, user, chat, text);
         mBB.setUser(user);
         try {
-            switch (arguments) {
+            switch (text) {
                 case SWITCH_HELPER:
-                    absSender.execute(new SendMessage()
+                    absSender.requestExecute(chat.getId(), new SendMessage()
                             .setChatId(chat.getId())
                             .setParseMode(ParseMode.MARKDOWN)
                             .setText(mBB.getMessage("inline_help"))
@@ -89,20 +87,21 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
     }
 
     @Override
-    public void respondCallbackQuery(TimedAbsSender absSender, CallbackQuery cbq, Query q) {
-        mBB.setUser(cbq.getFrom());
-        StartQuery query = startQueryParser.parse(q);
+    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, Message message) {
+        mBB.setUser(user);
+        StartQuery q = startQueryParser.parse(query);
 
         try {
             SendMessage sendMessage = new SendMessage()
-                    .setChatId(cbq.getMessage().getChatId())
+                    .setChatId(message.getChatId())
                     .setText(mBB.getMessage("tap_inline"))
-                    .setReplyMarkup(useCaseCommandInlineKeyboard(query.getUseCase()));
+                    .setReplyMarkup(useCaseCommandInlineKeyboard(q.getUseCase()));
 
             AnswerCallbackQuery answer = new AnswerCallbackQuery()
-                    .setCallbackQueryId(cbq.getId());
+                    .setCallbackQueryId(callbackQueryId);
 
-            absSender.execute(new SendBundleAnswerCallbackQuery<>(sendMessage, answer));
+            absSender.requestExecute(message.getChatId(), sendMessage);
+            absSender.requestExecute(message.getChatId(), answer);
 
         } catch (EmptyKeyboardException e) {
             logger.error(e.getMessage());
@@ -110,9 +109,14 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
     }
 
     @Override
+    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, String inlineMessageId) {
+        // WON'T HAPPEN
+    }
+
+    @Override
     public void respondInlineQuery(TimedAbsSender absSender, User user, String id, String arguments) {
         mBB.setUser(user);
-        absSender.execute(new AnswerInlineQuery()
+        absSender.requestExecute(null, new AnswerInlineQuery()
                 .setInlineQueryId(id)
                 .setResults(new ArrayList<>())
                 .setSwitchPmParameter(SWITCH_HELPER)
@@ -125,7 +129,7 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
                 mBB.getMessage("people", Long.toString(Users.count())) + "\n\n" +
                 mBB.getMessage("credits");
 
-        absSender.execute(new SendMessage()
+        absSender.requestExecute(chat.getId(), new SendMessage()
                 .setChatId(chat.getId())
                 .setParseMode(ParseMode.MARKDOWN)
                 .setText(helpMessageBuilder)
@@ -139,7 +143,7 @@ public class StartCommand extends UseCaseCommand implements HandleCallbackQuery,
 
     private void newsMessage(TimedAbsSender absSender, long chatId) {
         try {
-            absSender.execute(new SendMessage()
+            absSender.requestExecute(chatId, new SendMessage()
                     .setChatId(chatId)
                     .setParseMode(ParseMode.MARKDOWN)
                     .setText(mBB.getMessage("news"))

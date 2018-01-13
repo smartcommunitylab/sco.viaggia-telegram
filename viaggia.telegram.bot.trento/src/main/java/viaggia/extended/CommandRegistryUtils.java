@@ -21,8 +21,6 @@ public class CommandRegistryUtils {
 
     public CommandRegistryUtils(CommandRegistry commandRegistry) {
         this.commandRegistry = commandRegistry;
-
-        List<Command> tmp = new ArrayList<>();
     }
 
     public String getHelpMessage(MessageBundleBuilder mBB) {

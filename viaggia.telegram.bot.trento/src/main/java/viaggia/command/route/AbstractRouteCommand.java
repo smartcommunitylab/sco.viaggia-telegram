@@ -3,12 +3,10 @@ package viaggia.command.route;
 import bot.exception.EmptyKeyboardException;
 import bot.keyboard.InlineKeyboardMarkupBuilder;
 import bot.model.Command;
-import bot.model.UseCaseCommand;
 import bot.model.handling.HandleCallbackQuery;
 import bot.model.handling.HandleInlineQuery;
 import bot.model.query.Query;
 import bot.timed.Chats;
-import bot.timed.SendBundleAnswerCallbackQuery;
 import bot.timed.TimedAbsSender;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
@@ -24,8 +22,8 @@ import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.ParseMode;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Chat;
+import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.api.objects.inlinequery.inputmessagecontent.InputTextMessageContent;
 import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResult;
@@ -38,6 +36,7 @@ import viaggia.command.route.general.query.RouteQueryParser;
 import viaggia.command.route.general.utils.InlineKeyboardRowNavRouteBuilder;
 import viaggia.command.route.general.utils.Mode;
 import viaggia.exception.IncorrectValueException;
+import viaggia.extended.DistinguishedUseCaseCommand;
 import viaggia.utils.MessageBundleBuilder;
 
 import java.time.LocalTime;
@@ -50,7 +49,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Created by Luca Mosetti in 2017
  */
-public abstract class AbstractRouteCommand extends UseCaseCommand implements HandleCallbackQuery, HandleInlineQuery {
+public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand implements HandleCallbackQuery, HandleInlineQuery {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractRouteCommand.class);
 
@@ -73,12 +72,14 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
 
     @Override
     public void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
+        super.respondCommand(absSender, user, chat);
         mBB.setUser(user);
         routeStartCommand(absSender, chat);
     }
 
     @Override
-    public void respondMessage(TimedAbsSender absSender, User user, Chat chat, String arguments) {
+    public void respondText(TimedAbsSender absSender, User user, Chat chat, String arguments) {
+        super.respondText(absSender, user, chat, arguments);
         mBB.setUser(user);
 
         try {
@@ -96,7 +97,7 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
                 key = routesInlineKeyboard(route, routeTT, nowIndex(routeTT), null);
             }
 
-            absSender.execute(new SendMessage()
+            absSender.requestExecute(chat.getId(), new SendMessage()
                     .setChatId(chat.getId())
                     .setParseMode(ParseMode.MARKDOWN)
                     .setText(text)
@@ -110,84 +111,21 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
     }
 
     @Override
-    public void respondCallbackQuery(TimedAbsSender absSender, CallbackQuery cbq, Query query) {
-        mBB.setUser(cbq.getFrom());
-        try {
-            RouteQuery q = routeQueryParser.parse(query);
-            ComparableRoute route = getRoute(q.getId());
-            MapTimeTable routeTT = getRouteTimeTable(route, q.getStopId());
+    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, Message message) {
+        routeCallbackQueryHandling(absSender, callbackQueryId, query, user, message.getChatId(), message.getMessageId(), message.getText(), null);
 
-            String text;
-            InlineKeyboardMarkup key;
+    }
 
-            if (routeTT.getTimes().isEmpty()) {
-                // not transit route
-
-                text = notTransitTextResponseBuilder(route);
-                key = notTransitInlineKeyboard(route);
-
-            } else if (q.getValue() != null && q.getValue().equals(FILTER)) {
-                // filter request
-
-                text = header(route) + mBB.getMessage("choose_stop");
-                key = stopsInlineKeyboard(route.getId(), routeTT.getStops(), routeTT.getStopsId(), q.getStopId());
-
-            } else if (q.getValue() != null && q.getValue().equals(HOURS)) {
-                // hours request
-
-                text = header(route) + mBB.getMessage("choose_hour");
-                key = hoursInlineKeyboard(route, routeTT, q.getStopId());
-            } else {
-                // default request
-
-                Integer val = Ints.tryParse(q.getValue());
-
-                if (val == null || val < 0 || val > routeTT.getTimes().size())
-                    val = nowIndex(routeTT);
-
-                text = textResponseBuilder(route, routeTT, val, q.getStopId() != null && !q.getStopId().isEmpty() && !q.getStopId().equals("null"));
-                key = routesInlineKeyboard(route, routeTT, val, q.getStopId());
-            }
-
-            AnswerCallbackQuery answer = new AnswerCallbackQuery()
-                    .setCallbackQueryId(cbq.getId())
-                    .setText(route.getRouteShortName());
-
-            if (cbq.getMessage() == null || !equalsFormattedTexts(text.trim(), cbq.getMessage().getText(), ParseMode.MARKDOWN)) {
-
-                EditMessageText editMessageText = new EditMessageText()
-                        .setParseMode(ParseMode.MARKDOWN)
-                        .setText(text)
-                        .setReplyMarkup(key);
-
-                if (cbq.getMessage() != null) {
-                    editMessageText
-                            .setChatId(cbq.getMessage().getChatId())
-                            .setMessageId(cbq.getMessage().getMessageId());
-                }
-
-                if (cbq.getInlineMessageId() != null) {
-                    editMessageText
-                            .setInlineMessageId(cbq.getInlineMessageId());
-                }
-
-                absSender.execute(new SendBundleAnswerCallbackQuery<>(editMessageText, answer));
-            } else {
-                absSender.execute(answer);
-            }
-
-        } catch (ExecutionException | EmptyKeyboardException e) {
-            logger.error(e.getMessage());
-        } catch (IncorrectValueException e) {
-            /* DO NOTHING */
-        }
+    @Override
+    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, String inlineMessageId) {
+        routeCallbackQueryHandling(absSender, callbackQueryId, query, user, null, null, null, inlineMessageId);
     }
 
     @Override
     public void respondInlineQuery(TimedAbsSender absSender, User user, String id, String arguments) {
         mBB.setUser(user);
         try {
-            absSender.execute(new AnswerInlineQuery()
+            absSender.requestExecute(null, new AnswerInlineQuery()
                     .setInlineQueryId(id)
                     .setResults(results(arguments)));
         } catch (ExecutionException | EmptyKeyboardException e) {
@@ -197,7 +135,7 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
 
     private void routeStartCommand(TimedAbsSender absSender, Chat chat) {
         try {
-            absSender.execute(new SendMessage()
+            absSender.requestExecute(chat.getId(), new SendMessage()
                     .setChatId(chat.getId())
                     .setText(mBB.getMessage(getCommand().getDescription()))
                     .setReplyMarkup(linesKeyboard()));
@@ -208,6 +146,82 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
         }
     }
 
+    private void routeCallbackQueryHandling(TimedAbsSender absSender, String callbackQueryId, Query query, User user, Long chatId, Integer messageId, String messageText, String inlineMessageId) {
+        mBB.setUser(user);
+
+        try {
+            RouteQuery q = routeQueryParser.parse(query);
+            ComparableRoute route = getRoute(q.getId());
+            MapTimeTable routeTT = getRouteTimeTable(route, q.getStopId());
+
+            String text;
+            InlineKeyboardMarkup markup;
+
+            if (routeTT.getTimes().isEmpty()) {
+                // not transit route
+
+                text = notTransitTextResponseBuilder(route);
+                markup = notTransitInlineKeyboard(route);
+
+            } else switch (q.getValue()) {
+                case FILTER:
+                    // filter request
+
+                    text = header(route) + mBB.getMessage("choose_stop");
+                    markup = stopsInlineKeyboard(route.getId(), routeTT.getStops(), routeTT.getStopsId(), q.getStopId());
+                    break;
+
+                case HOURS:
+                    // hours request
+
+                    text = header(route) + mBB.getMessage("choose_hour");
+                    markup = hoursInlineKeyboard(route, routeTT, q.getStopId());
+                    break;
+
+                default:
+                    // default request
+
+                    Integer val = Ints.tryParse(q.getValue());
+
+                    if (val == null || val < 0 || val > routeTT.getTimes().size())
+                        val = nowIndex(routeTT);
+
+                    text = textResponseBuilder(route, routeTT, val, q.getStopId() != null && !q.getStopId().isEmpty() && !q.getStopId().equals("null"));
+                    markup = routesInlineKeyboard(route, routeTT, val, q.getStopId());
+                    break;
+            }
+
+            EditMessageText edit = chatId != null ? new EditMessageText()
+                    .setChatId(chatId)
+                    .setMessageId(messageId)
+                    .setParseMode(ParseMode.MARKDOWN)
+                    .setText(text)
+                    .setReplyMarkup(markup)
+                    : new EditMessageText()
+                    .setInlineMessageId(inlineMessageId)
+                    .setParseMode(ParseMode.MARKDOWN)
+                    .setText(text)
+                    .setReplyMarkup(markup);
+
+            AnswerCallbackQuery answer = new AnswerCallbackQuery()
+                    .setCallbackQueryId(callbackQueryId)
+                    .setText(route.getRouteShortName());
+
+            if (chatId == null)
+                chatId = (long) user.hashCode();
+
+            if (!equalsFormattedTexts(edit.getText().trim(), messageText, ParseMode.MARKDOWN)) {
+                absSender.requestExecute(chatId, edit);
+            }
+
+            absSender.requestExecute(chatId, answer);
+
+        } catch (ExecutionException | EmptyKeyboardException e) {
+            logger.error(e.getMessage());
+        } catch (IncorrectValueException e) {
+            /* DO NOTHING */
+        }
+    }
 
     // region getters
     protected abstract ComparableRoute getRoute(String arguments) throws ExecutionException, IncorrectValueException;
@@ -294,7 +308,7 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
                 String title;
                 StringBuilder thumbUrl = new StringBuilder();
                 String description = null;
-                InlineKeyboardMarkup key;
+                InlineKeyboardMarkup markup;
                 String text;
 
                 switch (mode) {
@@ -312,11 +326,11 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
 
                 if (timeTable.getTimes().isEmpty()) {
                     thumbUrl.insert(0, "https://fakeimg.pl/100x100/bababa/fff/?&font_size=70&retina=1&text=");
-                    key = notTransitInlineKeyboard(route);
+                    markup = notTransitInlineKeyboard(route);
                     text = notTransitTextResponseBuilder(route);
                 } else {
                     thumbUrl.insert(0, "https://fakeimg.pl/100x100/168dfe/fff/?&font_size=70&retina=1&text=");
-                    key = routesInlineKeyboard(route, timeTable, 0, null);
+                    markup = routesInlineKeyboard(route, timeTable, 0, null);
                     text = mBB.getMessage("browse");
                 }
 
@@ -325,7 +339,7 @@ public abstract class AbstractRouteCommand extends UseCaseCommand implements Han
                         .setThumbUrl(thumbUrl.toString())
                         .setTitle(title)
                         .setDescription(description)
-                        .setReplyMarkup(key)
+                        .setReplyMarkup(markup)
                         .setThumbHeight(100)
                         .setThumbHeight(100)
                         .setInputMessageContent(new InputTextMessageContent()

@@ -17,8 +17,6 @@ import viaggia.command.route.bus.BusCommand;
 import viaggia.command.route.train.TrainCommand;
 import viaggia.command.start.StartCommand;
 
-import java.io.InvalidClassException;
-
 /**
  * Created by Luca Mosetti in 2017
  */
@@ -49,10 +47,10 @@ public class ViaggiaTrentoBot extends BotHandler {
             cr.register(new ParkingCommand());
             cr.register(new TrainCommand());
             cr.register(new LanguageCommand());
-            cr.setDefaultCommand(help);
-            cr.setDefaultInlineCommand(start);
+            cr.setDefaultCmd(help);
+            cr.setDefaultInlineCmd(start);
 
-        } catch (TwoCommandException | InvalidClassException e) {
+        } catch (TwoCommandException e) {
             logger.error(e.getMessage());
         }
     }
