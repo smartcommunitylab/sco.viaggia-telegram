@@ -208,7 +208,7 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
                     .setText(route.getRouteShortName());
 
             if (chatId == null)
-                chatId = (long) user.hashCode();
+                chatId = (long) user.getId().hashCode();
 
             if (!equalsFormattedTexts(edit.getText().trim(), messageText, ParseMode.MARKDOWN)) {
                 absSender.requestExecute(chatId, edit);

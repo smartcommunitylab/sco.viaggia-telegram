@@ -170,7 +170,7 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
             answer.setCacheTime(30);
 
             if (chatId == null)
-                chatId = (long) user.hashCode();
+                chatId = (long) user.getId().hashCode();
 
             if (Integer.parseInt(q.getValue()) != (available(parking))) {
                 absSender.requestExecute(chatId, edit);
