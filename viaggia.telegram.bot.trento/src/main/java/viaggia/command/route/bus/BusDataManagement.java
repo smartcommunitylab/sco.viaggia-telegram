@@ -57,10 +57,12 @@ class BusDataManagement {
     private static void refreshBusTimeTable() {
         try {
             for (Bus bus : getBusRoutes()) {
-                cacheTrentoBusTimetables.refresh(bus.getDirect().getId());
+                if (bus != null && bus.getDirect() != null) {
+                    cacheTrentoBusTimetables.refresh(bus.getDirect().getId());
 
-                if (bus.hasReturn()) {
-                    cacheTrentoBusTimetables.refresh(bus.getReturn().getId());
+                    if (bus.hasReturn()) {
+                        cacheTrentoBusTimetables.refresh(bus.getReturn().getId());
+                    }
                 }
             }
         } catch (ExecutionException e) {
