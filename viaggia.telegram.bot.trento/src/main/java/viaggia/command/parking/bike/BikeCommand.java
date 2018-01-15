@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class BikeCommand extends AbstractParkingCommand {
 
-    private static final Command COMMAND_ID = new Command("bike", "bikedescription");
+    private static final Command COMMAND_ID = new Command("bike", "bike_description");
 
     public BikeCommand() {
         super(COMMAND_ID, 700, Unit.METER);
@@ -32,7 +32,7 @@ public class BikeCommand extends AbstractParkingCommand {
     @Override
     protected String slotsToString(Parking parking) {
         return parking.getExtra() != null && parking.getExtra().containsKey("bikes") && (Integer) parking.getExtra().get("bikes") >= 0 ?
-                mBB.getMessage("bikesavailable", Integer.toString((Integer) parking.getExtra().get("bikes")), Integer.toString(parking.getSlotsTotal())) :
+                mBB.getMessage("bikes_available", Integer.toString((Integer) parking.getExtra().get("bikes")), Integer.toString(parking.getSlotsTotal())) :
                 mBB.getMessage("slots", Integer.toString(parking.getSlotsTotal()));
     }
 }

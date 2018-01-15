@@ -4,13 +4,10 @@ import bot.exception.EmptyKeyboardException;
 import bot.keyboard.InlineKeyboardMarkupBuilder;
 import bot.keyboard.ReplyKeyboardMarkupBuilder;
 import bot.model.Command;
-import bot.model.UseCaseCommand;
 import bot.model.handling.HandleCallbackQuery;
 import bot.model.handling.HandleInlineQuery;
-import bot.model.handling.HandleLocation;
 import bot.model.query.Query;
 import bot.timed.Chats;
-import bot.timed.SendBundleAnswerCallbackQuery;
 import bot.timed.TimedAbsSender;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableSortedMap;
@@ -25,9 +22,9 @@ import org.telegram.telegrambots.api.methods.ParseMode;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.send.SendVenue;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
-import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Chat;
 import org.telegram.telegrambots.api.objects.Location;
+import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResult;
 import org.telegram.telegrambots.api.objects.inlinequery.result.InlineQueryResultVenue;
@@ -39,6 +36,7 @@ import viaggia.command.parking.general.query.ParkingQueryParser;
 import viaggia.command.parking.general.utils.DistanceCalculator;
 import viaggia.command.parking.general.utils.Unit;
 import viaggia.exception.IncorrectValueException;
+import viaggia.extended.DistinguishedUseCaseCommand;
 import viaggia.utils.MessageBundleBuilder;
 
 import java.text.DecimalFormat;
@@ -49,9 +47,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
-public abstract class AbstractParkingCommand extends UseCaseCommand implements HandleLocation, HandleCallbackQuery, HandleInlineQuery {
+public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand implements HandleCallbackQuery, HandleInlineQuery {
     private static final Logger logger = LoggerFactory.getLogger(AbstractParkingCommand.class);
 
     protected final MessageBundleBuilder mBB = new MessageBundleBuilder();
@@ -72,17 +70,19 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
 
     @Override
     public void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
+        super.respondCommand(absSender, user, chat);
         mBB.setUser(user);
         parkingStartCommand(absSender, chat);
     }
 
     @Override
-    public void respondMessage(TimedAbsSender absSender, User user, Chat chat, String arguments) {
+    public void respondText(TimedAbsSender absSender, User user, Chat chat, String arguments) {
+        super.respondText(absSender, user, chat, arguments);
         mBB.setUser(user);
         try {
             Parking parking = getParking(arguments);
 
-            absSender.execute(new SendVenue()
+            absSender.requestExecute(chat.getId(), new SendVenue()
                     .setChatId(chat.getId())
                     .setTitle(parking.getName())
                     .setLatitude((float) parking.getPosition()[0])
@@ -103,7 +103,7 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
         try {
             Map<String, Double> bikeDistance = getParkings(location);
 
-            absSender.execute(new SendMessage()
+            absSender.requestExecute(chat.getId(), new SendMessage()
                     .setChatId(chat.getId())
                     .setParseMode(ParseMode.MARKDOWN)
                     .setText(textBuilderDistance(bikeDistance))
@@ -115,45 +115,20 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
     }
 
     @Override
-    public void respondCallbackQuery(TimedAbsSender absSender, CallbackQuery cbq, Query query) {
-        mBB.setUser(cbq.getFrom());
-        try {
-            ParkingQuery q = parkingQueryParser.parse(query);
-            Parking parking = getSimilarParking(q.getName());
+    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, Message message) {
+        parkingCallbackQueryHandling(absSender, callbackQueryId, query, user, message.getChatId(), message.getMessageId(), null);
+    }
 
-            EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup()
-                    .setReplyMarkup(inlineKeyboardMarkup(parking));
-
-            if (cbq.getMessage() != null)
-                editMessageReplyMarkup
-                        .setChatId(cbq.getMessage().getChatId())
-                        .setMessageId(cbq.getMessage().getMessageId());
-            else
-                editMessageReplyMarkup
-                        .setInlineMessageId(cbq.getInlineMessageId());
-
-            AnswerCallbackQuery answer = new AnswerCallbackQuery();
-            answer.setCacheTime(30);
-            answer.setCallbackQueryId(cbq.getId()).setText(parking.getName());
-
-            if (Integer.parseInt(q.getValue()) != (available(parking))) {
-                absSender.execute(new SendBundleAnswerCallbackQuery<>(editMessageReplyMarkup, answer));
-            } else {
-                absSender.execute(answer);
-            }
-
-        } catch (ExecutionException | EmptyKeyboardException e) {
-            logger.error(e.getMessage());
-        } catch (IncorrectValueException e) {
-            /* DO NOTHING */
-        }
+    @Override
+    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, String inlineMessageId) {
+        parkingCallbackQueryHandling(absSender, callbackQueryId, query, user, null, null, inlineMessageId);
     }
 
     @Override
     public void respondInlineQuery(TimedAbsSender absSender, User user, String id, String arguments) {
         mBB.setUser(user);
         try {
-            absSender.execute(new AnswerInlineQuery()
+            absSender.requestExecute(null, new AnswerInlineQuery()
                     .setInlineQueryId(id)
                     .setResults(results(arguments)));
         } catch (EmptyKeyboardException | ExecutionException e) {
@@ -163,7 +138,7 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
 
     private void parkingStartCommand(TimedAbsSender absSender, Chat chat) {
         try {
-            absSender.execute(new SendMessage()
+            absSender.requestExecute(chat.getId(), new SendMessage()
                     .setChatId(chat.getId())
                     .setText(mBB.getMessage(getCommand().getDescription()))
                     .setReplyMarkup(keyboardMarkup(chat)));
@@ -171,6 +146,43 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
             Chats.setCommand(chat.getId(), getCommand());
         } catch (EmptyKeyboardException | ExecutionException e) {
             logger.error(e.getMessage());
+        }
+    }
+
+    private void parkingCallbackQueryHandling(TimedAbsSender absSender, String callbackQueryId, Query query, User user, Long chatId, Integer messageId, String inlineMessageId) {
+        mBB.setUser(user);
+        try {
+            ParkingQuery q = parkingQueryParser.parse(query);
+            Parking parking = getSimilarParking(q.getName());
+
+            EditMessageReplyMarkup edit = chatId != null ? new EditMessageReplyMarkup()
+                    .setReplyMarkup(inlineKeyboardMarkup(parking))
+                    .setChatId(chatId)
+                    .setMessageId(messageId)
+                    : new EditMessageReplyMarkup()
+                    .setReplyMarkup(inlineKeyboardMarkup(parking))
+                    .setInlineMessageId(inlineMessageId);
+
+            AnswerCallbackQuery answer = new AnswerCallbackQuery()
+                    .setCallbackQueryId(callbackQueryId)
+                    .setText(parking.getName());
+
+            answer.setCacheTime(30);
+
+            if (chatId == null)
+                chatId = (long) user.getId().hashCode();
+
+            if (Integer.parseInt(q.getValue()) != (available(parking))) {
+                absSender.requestExecute(chatId, edit);
+                absSender.requestExecute(chatId, answer);
+            } else {
+                absSender.requestExecute(chatId, answer);
+            }
+
+        } catch (ExecutionException | EmptyKeyboardException e) {
+            logger.error(e.getMessage());
+        } catch (IncorrectValueException e) {
+            /* DO NOTHING */
         }
     }
 
@@ -280,14 +292,13 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
         replyKeyboardMarkupBuilder
                 .setResizeKeyboard(true)
                 .setOneTimeKeyboard(true)
-                .setColumns(2)
-                .setKeyboardButtons(parkings);
+                .addKeyboardButtons(2, parkings);
 
         if (chat.isUserChat())
             replyKeyboardMarkupBuilder
                     .addRequestLocationButton();
 
-        return replyKeyboardMarkupBuilder.build();
+        return replyKeyboardMarkupBuilder.build(true);
     }
 
     private InlineKeyboardMarkup inlineKeyboardMarkup(Parking parking) throws EmptyKeyboardException {
@@ -297,7 +308,7 @@ public abstract class AbstractParkingCommand extends UseCaseCommand implements H
                         .setName(parking.getName())
                         .setAvailable(available(parking))
                         .build(true))
-                .build();
+                .build(true);
     }
 
     // endregion keyboard

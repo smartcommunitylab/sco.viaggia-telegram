@@ -5,7 +5,7 @@ import bot.model.query.QueryBuilder;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Id;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  * <p>
  * QueryBuilder for Routes in general
  * (Bus and Train information)

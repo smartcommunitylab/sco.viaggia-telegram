@@ -1,7 +1,5 @@
 package viaggia.command.route.train;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -22,29 +20,33 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  * <p>
  * Downloads and caches the Train information
  */
-/*package*/ class TrainDataManagement {
+class TrainDataManagement {
 
     private static final Logger logger = LoggerFactory.getLogger(TrainDataManagement.class);
     private static final MobilityDataServiceTrento trento = MobilityDataServiceTrentoSingleton.getInstance();
     private static final MobilityDataServicePro service = MobilityDataServiceProSingleton.getInstance();
-    private static final Supplier<ComparableRoutes> supplierTrains;
+    private static final LoadingCache<String, ComparableRoutes> cacheTrainRoutes;
     private static final LoadingCache<ComparableId, MapTimeTable> cacheTrainTimetables;
 
-
     static {
-        supplierTrains = Suppliers.memoizeWithExpiration(() -> {
-            try {
-                return trento.getTrains();
-            } catch (MobilityServiceException e) {
-                e.printStackTrace();
-            }
 
-            return null;
-        }, 1, TimeUnit.DAYS);
+        cacheTrainRoutes = CacheBuilder.newBuilder()
+                .refreshAfterWrite(1, TimeUnit.DAYS)
+                .build(new CacheLoader<String, ComparableRoutes>() {
+                    @Override
+                    public ComparableRoutes load(String agencyId) throws Exception {
+                        ComparableRoutes tmp = trento.getTrains();
+
+                        if (tmp == null)
+                            throw new MobilityServiceException();
+
+                        return tmp;
+                    }
+                });
 
         cacheTrainTimetables = CacheBuilder.newBuilder()
                 .build(new CacheLoader<ComparableId, MapTimeTable>() {
@@ -56,31 +58,26 @@ import java.util.concurrent.TimeUnit;
 
     }
 
-    private static void refreshTrainTimeTable(ComparableId comparableId) {
-        cacheTrainTimetables.refresh(comparableId);
+    private static void refreshTrainTimeTable() {
+        try {
+            for (ComparableRoute route : getTrainsComparableRoutes()) {
+                cacheTrainTimetables.refresh(route.getId());
+            }
+        } catch (ExecutionException e) {
+            logger.error(e.getMessage());
+        }
     }
 
-    /*package*/
     static void scheduleUpdate() {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
-                () -> {
-                    try {
-                        for (ComparableRoute route : getTrainsComparableRoutes()) {
-                            refreshTrainTimeTable(route.getId());
-                        }
-                    } catch (ExecutionException e) {
-                        logger.error(e.getMessage());
-                    }
-                }, 0, 1, TimeUnit.HOURS
+                TrainDataManagement::refreshTrainTimeTable, 0, 1, TimeUnit.HOURS
         );
     }
 
-    /*package*/
     static ComparableRoutes getTrainsComparableRoutes() throws ExecutionException {
-        return supplierTrains.get();
+        return cacheTrainRoutes.get(MobilityDataServiceTrento.TRENTO);
     }
 
-    /*package*/
     static MapTimeTable getTrainTimetable(ComparableId comparableId) throws ExecutionException {
         return cacheTrainTimetables.get(comparableId);
     }

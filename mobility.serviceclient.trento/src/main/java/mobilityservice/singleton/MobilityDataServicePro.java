@@ -5,13 +5,13 @@ import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import mobilityservice.model.MapTimeTable;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class MobilityDataServicePro {
 
     private static final MobilityDataService service = MobilityDataServiceSingleton.getInstance();
 
-    /*package*/ MobilityDataServicePro() {
+    MobilityDataServicePro() {
     }
 
     public MapTimeTable getMapTimeTable(String agencyId, String routeId, Long when, String token) throws MobilityServiceException {

@@ -5,11 +5,11 @@ import bot.model.query.Query;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class LanguageQuery extends Query implements LanguageRegex {
 
-    /*package*/ LanguageQuery(Map map) {
+    LanguageQuery(Map map) {
         super(map);
     }
 

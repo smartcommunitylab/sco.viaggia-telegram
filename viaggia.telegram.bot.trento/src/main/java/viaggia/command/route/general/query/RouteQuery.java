@@ -6,7 +6,7 @@ import mobilityservice.model.ComparableId;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  * <p>
  * Query for Routes in general
  * (Bus and Train information)
@@ -15,7 +15,7 @@ public class RouteQuery extends Query implements RouteRegex {
 
     private final ComparableId id;
 
-    /*package*/ RouteQuery(Map map) {
+    RouteQuery(Map map) {
         super(map);
 
         // compatibility

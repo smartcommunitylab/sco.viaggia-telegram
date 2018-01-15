@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * created by gekoramy
+ * Created by Luca Mosetti in 2017
  */
 public class Parkings extends ArrayList<Parking> {
 

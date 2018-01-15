@@ -1,7 +1,7 @@
 package mobilityservice.singleton;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class MobilityDataServiceProSingleton {
 

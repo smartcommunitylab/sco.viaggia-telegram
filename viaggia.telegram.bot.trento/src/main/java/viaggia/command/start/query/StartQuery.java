@@ -5,11 +5,11 @@ import bot.model.query.Query;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class StartQuery extends Query implements StartRegex {
 
-    /*package*/ StartQuery(Map map) {
+    StartQuery(Map map) {
         super(map);
     }
 

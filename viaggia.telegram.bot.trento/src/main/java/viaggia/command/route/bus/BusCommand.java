@@ -14,11 +14,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class BusCommand extends AbstractRouteCommand {
 
-    private static final Command COMMAND_ID = new Command("bus", "busdescrition");
+    private static final Command COMMAND_ID = new Command("bus", "bus_description");
 
     private final ReplyKeyboardMarkupBuilder replyKeyboardMarkupBuilder = new ReplyKeyboardMarkupBuilder();
 
@@ -72,9 +72,8 @@ public class BusCommand extends AbstractRouteCommand {
         return replyKeyboardMarkupBuilder
                 .setResizeKeyboard(true)
                 .setOneTimeKeyboard(true)
-                .setColumns(6)
-                .setKeyboardButtons(buses)
-                .build();
+                .addKeyboardButtons(6, buses)
+                .build(true);
     }
 
     @Override
@@ -88,17 +87,18 @@ public class BusCommand extends AbstractRouteCommand {
                     .addFullRowInlineButton(mBB.getMessage("return"), routeQueryBuilder
                             .setCommand(getCommand())
                             .setId(bus.getReturn().getId())
-                            .setValue("now")
+                            .setValue(NOW)
                             .build(true));
 
         if (bus.isReturn(route))
             inlineKeyboardMarkupBuilder
-                    .addFullRowInlineButton(mBB.getMessage("direct"), routeQueryBuilder.setCommand(getCommand())
+                    .addFullRowInlineButton(mBB.getMessage("direct"), routeQueryBuilder
+                            .setCommand(getCommand())
                             .setId(bus.getDirect().getId())
-                            .setValue("now")
+                            .setValue(NOW)
                             .build(true));
 
-        return inlineKeyboardMarkupBuilder.build();
+        return inlineKeyboardMarkupBuilder.build(true);
     }
 
     private Bus getBus(String busShortName) throws ExecutionException, IncorrectValueException {

@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class MobilityDataServiceTrento {
 
@@ -26,6 +26,8 @@ public class MobilityDataServiceTrento {
     private static final String AGENCY_TRAINS_TM = "10";
     private static final String AGENCY_PARKING = "COMUNE_DI_TRENTO";
     private static final String AGENCY_BIKE = "BIKE_SHARING_TOBIKE_TRENTO";
+
+    public static final String TRENTO = "TN";
 
     // region comparators
 
@@ -52,7 +54,7 @@ public class MobilityDataServiceTrento {
 
     // endregion comparators
 
-    /*package*/ MobilityDataServiceTrento() {
+    MobilityDataServiceTrento() {
     }
 
     private static List<Route> correctsIDs(List<Route> routes) {

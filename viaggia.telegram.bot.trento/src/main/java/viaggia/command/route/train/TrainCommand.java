@@ -15,11 +15,11 @@ import viaggia.exception.IncorrectValueException;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class TrainCommand extends AbstractRouteCommand {
 
-    private static final Command COMMAND_ID = new Command("train", "traindescription");
+    private static final Command COMMAND_ID = new Command("train", "train_description");
 
     private final ReplyKeyboardMarkupBuilder replyKeyboardMarkupBuilder = new ReplyKeyboardMarkupBuilder();
 
@@ -72,8 +72,7 @@ public class TrainCommand extends AbstractRouteCommand {
         return replyKeyboardMarkupBuilder
                 .setResizeKeyboard(true)
                 .setOneTimeKeyboard(true)
-                .setColumns(1)
-                .setKeyboardButtons((getRoutes()).getLongNames())
-                .build();
+                .addKeyboardButtons(1, (getRoutes()).getLongNames())
+                .build(true);
     }
 }

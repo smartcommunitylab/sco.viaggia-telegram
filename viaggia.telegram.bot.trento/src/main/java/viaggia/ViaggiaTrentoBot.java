@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.inlinequery.InlineQuery;
+import viaggia.command.contribute.ContributeCommand;
 import viaggia.command.help.HelpCommand;
 import viaggia.command.language.LanguageCommand;
 import viaggia.command.parking.bike.BikeCommand;
@@ -16,10 +17,8 @@ import viaggia.command.route.bus.BusCommand;
 import viaggia.command.route.train.TrainCommand;
 import viaggia.command.start.StartCommand;
 
-import java.io.InvalidClassException;
-
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class ViaggiaTrentoBot extends BotHandler {
 
@@ -28,11 +27,11 @@ public class ViaggiaTrentoBot extends BotHandler {
     /**
      * Here should be registered all the UseCaseCommand
      *
-     * @param botName
-     * @param botToken
+     * @param botName botName
+     * @param botToken botToken
      */
     public ViaggiaTrentoBot(String botName, String botToken) {
-        super(botName, botToken);
+        super(botName, botToken, 15);
 
         try {
             CommandRegistry cr = getCommandRegistry();
@@ -42,15 +41,16 @@ public class ViaggiaTrentoBot extends BotHandler {
 
             cr.register(start);
             cr.register(help);
+            cr.register(new ContributeCommand());
             cr.register(new BikeCommand());
             cr.register(new BusCommand());
             cr.register(new ParkingCommand());
             cr.register(new TrainCommand());
             cr.register(new LanguageCommand());
-            cr.setDefaultCommand(help);
-            cr.setDefaultInlineCommand(start);
+            cr.setDefaultCmd(help);
+            cr.setDefaultInlineCmd(start);
 
-        } catch (TwoCommandException | InvalidClassException e) {
+        } catch (TwoCommandException e) {
             logger.error(e.getMessage());
         }
     }

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti on 2017
+ * Created by Luca Mosetti in 2017
  */
 public class InlineKeyboardRowNavRouteBuilder {
 
@@ -20,7 +20,7 @@ public class InlineKeyboardRowNavRouteBuilder {
      * @param length     possibilities
      * @param chosen     chosen possibility
      * @param columns    number of columns
-     * @param COMMAND_ID viaggia.command id
+     * @param COMMAND_ID command id
      * @param id         route id
      * @return useful navigation bar
      */
