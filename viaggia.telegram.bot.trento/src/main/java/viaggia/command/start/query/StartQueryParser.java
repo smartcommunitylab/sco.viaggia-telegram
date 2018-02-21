@@ -1,13 +1,14 @@
 package viaggia.command.start.query;
 
-import bot.model.query.Query;
+import gekoramy.telegram.bot.model.query.Query;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class StartQueryParser {
 
-    public StartQuery parse(Query query) {
+    public static StartQuery parse(Query query) {
         return new StartQuery(query.getMap());
     }
 }

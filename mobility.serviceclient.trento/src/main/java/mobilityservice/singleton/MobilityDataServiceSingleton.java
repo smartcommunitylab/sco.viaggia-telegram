@@ -3,7 +3,8 @@ package mobilityservice.singleton;
 import eu.trentorise.smartcampus.mobilityservice.MobilityDataService;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class MobilityDataServiceSingleton {
 

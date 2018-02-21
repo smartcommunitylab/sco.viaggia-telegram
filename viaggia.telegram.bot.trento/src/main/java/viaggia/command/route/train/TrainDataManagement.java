@@ -20,9 +20,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by Luca Mosetti in 2017
- * <p>
  * Downloads and caches the Train information
+ *
+ * @author Luca Mosetti
+ * @since 2017
  */
 class TrainDataManagement {
 

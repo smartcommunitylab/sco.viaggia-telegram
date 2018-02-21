@@ -1,22 +1,20 @@
 package viaggia.command.route;
 
-import bot.exception.EmptyKeyboardException;
-import bot.keyboard.InlineKeyboardMarkupBuilder;
-import bot.model.Command;
-import bot.model.handling.HandleCallbackQuery;
-import bot.model.handling.HandleInlineQuery;
-import bot.model.query.Query;
-import bot.timed.Chats;
-import bot.timed.TimedAbsSender;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+import gekoramy.telegram.bot.keyboard.InlineKeyboardMarkupBuilder;
+import gekoramy.telegram.bot.model.Command;
+import gekoramy.telegram.bot.model.query.Query;
+import gekoramy.telegram.bot.responder.CallbackQueryResponder;
+import gekoramy.telegram.bot.responder.InlineCallbackQueryResponder;
+import gekoramy.telegram.bot.responder.InlineQueryResponder;
+import gekoramy.telegram.bot.responder.MessageResponder;
+import gekoramy.telegram.bot.responder.type.CallbackQueryEditor;
 import it.sayservice.platform.smartplanner.data.message.alerts.CreatorType;
 import mobilityservice.model.ComparableId;
 import mobilityservice.model.ComparableRoute;
 import mobilityservice.model.ComparableRoutes;
 import mobilityservice.model.MapTimeTable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.ParseMode;
@@ -35,9 +33,8 @@ import viaggia.command.route.general.query.RouteQueryBuilder;
 import viaggia.command.route.general.query.RouteQueryParser;
 import viaggia.command.route.general.utils.InlineKeyboardRowNavRouteBuilder;
 import viaggia.command.route.general.utils.Mode;
-import viaggia.exception.IncorrectValueException;
+import viaggia.exception.NotHandledException;
 import viaggia.extended.DistinguishedUseCaseCommand;
-import viaggia.utils.MessageBundleBuilder;
 
 import java.time.LocalTime;
 import java.util.AbstractMap;
@@ -47,23 +44,16 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
-public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand implements HandleCallbackQuery, HandleInlineQuery {
-
-    private static final Logger logger = LoggerFactory.getLogger(AbstractRouteCommand.class);
-
-    protected final InlineKeyboardMarkupBuilder inlineKeyboardMarkupBuilder = new InlineKeyboardMarkupBuilder();
-    protected final RouteQueryBuilder routeQueryBuilder = new RouteQueryBuilder();
-    protected final MessageBundleBuilder mBB = new MessageBundleBuilder();
-
-    private final InlineKeyboardRowNavRouteBuilder inlineKeyboardRowNavRouteBuilder = new InlineKeyboardRowNavRouteBuilder();
-    private final RouteQueryParser routeQueryParser = new RouteQueryParser();
-    private final Mode mode;
+public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand {
 
     private static final String HOURS = "hours";
-    protected static final String NOW = "now";
     private static final String FILTER = "flt";
+    protected static final String NOW = "now";
+
+    private final Mode mode;
 
     public AbstractRouteCommand(Command command, Mode mode) {
         super(command);
@@ -71,17 +61,19 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
     }
 
     @Override
-    public void respondCommand(TimedAbsSender absSender, User user, Chat chat) {
-        super.respondCommand(absSender, user, chat);
-        mBB.setUser(user);
-        routeStartCommand(absSender, chat);
+    public void respondCommand(MessageResponder absSender, Chat chat, User user) {
+        super.respondCommand(absSender, chat, user);
+        try {
+            absSender.send(routeStartCommand(user.getId()))
+                    .toComplete();
+        } catch (Throwable e) {
+            logger.error(getClass().toString(), e);
+        }
     }
 
     @Override
-    public void respondText(TimedAbsSender absSender, User user, Chat chat, String arguments) {
-        super.respondText(absSender, user, chat, arguments);
-        mBB.setUser(user);
-
+    public void respondText(MessageResponder absSender, Chat chat, User user, String arguments) {
+        super.respondText(absSender, chat, user, arguments);
         try {
             ComparableRoute route = getRoute(arguments);
             MapTimeTable routeTT = getRouteTimeTable(route);
@@ -90,69 +82,76 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
             InlineKeyboardMarkup key;
 
             if (routeTT.getTimes().isEmpty()) {
-                text = notTransitTextResponseBuilder(route);
-                key = notTransitInlineKeyboard(route);
+                text = notTransitTextResponseBuilder(route, user.getId());
+                key = notTransitInlineKeyboard(route, user.getId());
             } else {
-                text = textResponseBuilder(route, routeTT, nowIndex(routeTT), false);
-                key = routesInlineKeyboard(route, routeTT, nowIndex(routeTT), null);
+                text = textResponseBuilder(route, routeTT, nowIndex(routeTT), false, user.getId());
+                key = routesInlineKeyboard(route, routeTT, nowIndex(routeTT), null, user.getId());
             }
 
-            absSender.requestExecute(chat.getId(), new SendMessage()
-                    .setChatId(chat.getId())
+            absSender.send(new SendMessage()
                     .setParseMode(ParseMode.MARKDOWN)
                     .setText(text)
                     .setReplyMarkup(key));
 
-        } catch (IncorrectValueException e) {
-            routeStartCommand(absSender, chat);
-        } catch (ExecutionException | EmptyKeyboardException e) {
-            logger.error(e.getMessage());
+        } catch (NotHandledException e) {
+            absSender.send(routeStartCommand(user.getId()));
+            absSender.toComplete();
+            absSender.setHandled(false);
+        } catch (Throwable e) {
+            logger.error(getClass().toString(), e);
         }
     }
 
     @Override
-    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, Message message) {
-        routeCallbackQueryHandling(absSender, callbackQueryId, query, user, message.getChatId(), message.getMessageId(), message.getText(), null);
-
+    public void respondCallbackQuery(CallbackQueryResponder absSender, Query query, User user, Message message) {
+        routeCallbackQueryHandling(absSender, query, user.getId());
     }
 
     @Override
-    public void respondCallbackQuery(TimedAbsSender absSender, String callbackQueryId, Query query, User user, String inlineMessageId) {
-        routeCallbackQueryHandling(absSender, callbackQueryId, query, user, null, null, null, inlineMessageId);
+    public void respondCallbackQuery(InlineCallbackQueryResponder absSender, Query query, User user) {
+        routeCallbackQueryHandling(absSender, query, user.getId());
     }
 
     @Override
-    public void respondInlineQuery(TimedAbsSender absSender, User user, String id, String arguments) {
-        mBB.setUser(user);
+    public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments) {
         try {
-            absSender.requestExecute(null, new AnswerInlineQuery()
-                    .setInlineQueryId(id)
-                    .setResults(results(arguments)));
-        } catch (ExecutionException | EmptyKeyboardException e) {
-            logger.error(e.getMessage());
+            absSender.answer(new AnswerInlineQuery()
+                    .setResults(results(arguments, user.getId())));
+        } catch (Throwable e) {
+            logger.error(getClass().toString(), e);
         }
     }
 
-    private void routeStartCommand(TimedAbsSender absSender, Chat chat) {
+    private void routeCallbackQueryHandling(CallbackQueryEditor absSender, Query query, int userId) {
         try {
-            absSender.requestExecute(chat.getId(), new SendMessage()
-                    .setChatId(chat.getId())
-                    .setText(mBB.getMessage(getCommand().getDescription()))
-                    .setReplyMarkup(linesKeyboard()));
-
-            Chats.setCommand(chat.getId(), getCommand());
-        } catch (EmptyKeyboardException | ExecutionException e) {
-            logger.error(e.getMessage());
-        }
-    }
-
-    private void routeCallbackQueryHandling(TimedAbsSender absSender, String callbackQueryId, Query query, User user, Long chatId, Integer messageId, String messageText, String inlineMessageId) {
-        mBB.setUser(user);
-
-        try {
-            RouteQuery q = routeQueryParser.parse(query);
+            RouteQuery q = RouteQueryParser.parse(query);
             ComparableRoute route = getRoute(q.getId());
-            MapTimeTable routeTT = getRouteTimeTable(route, q.getStopId());
+
+            absSender.send(editRoute(userId, route, q.getStopId(), q.getValue()));
+            absSender.answer(new AnswerCallbackQuery().setText(route.getRouteShortName()));
+        } catch (NotHandledException e) {
+            absSender.setHandled(false);
+            logger.error(getClass().toString(), e);
+        } catch (Throwable e) {
+            logger.error(getClass().toString(), e);
+        }
+    }
+
+    private SendMessage routeStartCommand(int userId) {
+        try {
+            return new SendMessage()
+                    .setText(mBB.getMessage(userId, getCommand().getDescription()))
+                    .setReplyMarkup(linesKeyboard());
+        } catch (Throwable e) {
+            return new SendMessage()
+                    .setText("Something went wrong...");
+        }
+    }
+
+    private EditMessageText editRoute(int userId, ComparableRoute route, String stopId, String value) {
+        try {
+            MapTimeTable routeTT = getRouteTimeTable(route, stopId);
 
             String text;
             InlineKeyboardMarkup markup;
@@ -160,77 +159,57 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
             if (routeTT.getTimes().isEmpty()) {
                 // not transit route
 
-                text = notTransitTextResponseBuilder(route);
-                markup = notTransitInlineKeyboard(route);
+                text = notTransitTextResponseBuilder(route, userId);
+                markup = notTransitInlineKeyboard(route, userId);
 
-            } else switch (q.getValue()) {
+            } else switch (value) {
                 case FILTER:
                     // filter request
 
-                    text = header(route) + mBB.getMessage("choose_stop");
-                    markup = stopsInlineKeyboard(route.getId(), routeTT.getStops(), routeTT.getStopsId(), q.getStopId());
+                    text = header(route) + mBB.getMessage(userId, "choose_stop");
+                    markup = stopsInlineKeyboard(route.getId(), routeTT.getStops(), routeTT.getStopsId(), stopId, userId);
                     break;
 
                 case HOURS:
                     // hours request
 
-                    text = header(route) + mBB.getMessage("choose_hour");
-                    markup = hoursInlineKeyboard(route, routeTT, q.getStopId());
+                    text = header(route) + mBB.getMessage(userId, "choose_hour");
+                    markup = hoursInlineKeyboard(route, routeTT, stopId, userId);
                     break;
 
                 default:
                     // default request
 
-                    Integer val = Ints.tryParse(q.getValue());
+                    Integer val = Ints.tryParse(value);
 
                     if (val == null || val < 0 || val > routeTT.getTimes().size())
                         val = nowIndex(routeTT);
 
-                    text = textResponseBuilder(route, routeTT, val, q.getStopId() != null && !q.getStopId().isEmpty() && !q.getStopId().equals("null"));
-                    markup = routesInlineKeyboard(route, routeTT, val, q.getStopId());
+                    text = textResponseBuilder(route, routeTT, val, stopId != null && !stopId.isEmpty() && !stopId.equals("null"), userId);
+                    markup = routesInlineKeyboard(route, routeTT, val, stopId, userId);
                     break;
             }
 
-            EditMessageText edit = chatId != null ? new EditMessageText()
-                    .setChatId(chatId)
-                    .setMessageId(messageId)
-                    .setParseMode(ParseMode.MARKDOWN)
-                    .setText(text)
-                    .setReplyMarkup(markup)
-                    : new EditMessageText()
-                    .setInlineMessageId(inlineMessageId)
+            return new EditMessageText()
                     .setParseMode(ParseMode.MARKDOWN)
                     .setText(text)
                     .setReplyMarkup(markup);
-
-            AnswerCallbackQuery answer = new AnswerCallbackQuery()
-                    .setCallbackQueryId(callbackQueryId)
-                    .setText(route.getRouteShortName());
-
-            if (chatId == null)
-                chatId = (long) user.getId().hashCode();
-
-            if (!equalsFormattedTexts(edit.getText().trim(), messageText, ParseMode.MARKDOWN)) {
-                absSender.requestExecute(chatId, edit);
-            }
-
-            absSender.requestExecute(chatId, answer);
-
-        } catch (ExecutionException | EmptyKeyboardException e) {
-            logger.error(e.getMessage());
-        } catch (IncorrectValueException e) {
-            /* DO NOTHING */
+        } catch (ExecutionException | NotHandledException e) {
+            return new EditMessageText()
+                    .setText("Something went wrong...")
+                    .setReplyMarkup(notTransitInlineKeyboard(route, userId));
         }
     }
 
     // region getters
-    protected abstract ComparableRoute getRoute(String arguments) throws ExecutionException, IncorrectValueException;
 
-    protected abstract ComparableRoute getRoute(ComparableId id) throws ExecutionException, IncorrectValueException;
+    protected abstract ComparableRoute getRoute(String arguments) throws ExecutionException, NotHandledException;
+
+    protected abstract ComparableRoute getRoute(ComparableId id) throws ExecutionException, NotHandledException;
 
     protected abstract ComparableRoutes getRoutes() throws ExecutionException;
 
-    private ComparableRoutes getRoutes(String filter) throws ExecutionException, IncorrectValueException {
+    private ComparableRoutes getRoutes(String filter) throws ExecutionException, NotHandledException {
         if (filter == null || filter.isEmpty()) return getRoutes();
 
         ComparableRoutes subRoutes;
@@ -246,20 +225,20 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
                 break;
         }
 
-        if (subRoutes.isEmpty()) throw new IncorrectValueException();
+        if (subRoutes.isEmpty()) throw new NotHandledException();
 
         return subRoutes;
     }
 
-    protected abstract MapTimeTable getRouteTimeTable(ComparableRoute route) throws ExecutionException, IncorrectValueException;
+    protected abstract MapTimeTable getRouteTimeTable(ComparableRoute route) throws ExecutionException, NotHandledException;
 
-    private MapTimeTable getRouteTimeTable(ComparableRoute route, String stopId) throws ExecutionException, IncorrectValueException {
+    private MapTimeTable getRouteTimeTable(ComparableRoute route, String stopId) throws ExecutionException, NotHandledException {
         if (stopId == null || stopId.isEmpty() || stopId.equals("null")) return getRouteTimeTable(route);
 
         MapTimeTable subMapTimeTable = getRouteTimeTable(route).subMapTimeTable(stopId);
 
         if (subMapTimeTable == null || subMapTimeTable.getTimes().isEmpty())
-            throw new IncorrectValueException();
+            throw new NotHandledException();
 
         return subMapTimeTable;
     }
@@ -298,7 +277,7 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
         return null;
     }
 
-    private List<InlineQueryResult> results(String filter) throws ExecutionException, EmptyKeyboardException {
+    private List<InlineQueryResult> results(String filter, int userId) throws ExecutionException {
         List<InlineQueryResult> results = new ArrayList<>();
 
         try {
@@ -308,7 +287,7 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
                 String title;
                 StringBuilder thumbUrl = new StringBuilder();
                 String description = null;
-                InlineKeyboardMarkup markup;
+                InlineKeyboardMarkup key;
                 String text;
 
                 switch (mode) {
@@ -326,12 +305,12 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
 
                 if (timeTable.getTimes().isEmpty()) {
                     thumbUrl.insert(0, "https://fakeimg.pl/100x100/bababa/fff/?&font_size=70&retina=1&text=");
-                    markup = notTransitInlineKeyboard(route);
-                    text = notTransitTextResponseBuilder(route);
+                    key = notTransitInlineKeyboard(route, userId);
+                    text = notTransitTextResponseBuilder(route, userId);
                 } else {
                     thumbUrl.insert(0, "https://fakeimg.pl/100x100/168dfe/fff/?&font_size=70&retina=1&text=");
-                    markup = routesInlineKeyboard(route, timeTable, 0, null);
-                    text = mBB.getMessage("browse");
+                    key = routesInlineKeyboard(route, timeTable, 0, null, userId);
+                    text = mBB.getMessage(userId, "browse");
                 }
 
                 results.add(new InlineQueryResultArticle()
@@ -339,14 +318,14 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
                         .setThumbUrl(thumbUrl.toString())
                         .setTitle(title)
                         .setDescription(description)
-                        .setReplyMarkup(markup)
+                        .setReplyMarkup(key)
                         .setThumbHeight(100)
                         .setThumbHeight(100)
                         .setInputMessageContent(new InputTextMessageContent()
                                 .setMessageText(text)
                                 .setParseMode(ParseMode.MARKDOWN)));
             }
-        } catch (IncorrectValueException e) {
+        } catch (NotHandledException e) {
             logger.error(e.getMessage());
         }
 
@@ -368,15 +347,15 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
         }
     }
 
-    private String notTransitTextResponseBuilder(ComparableRoute route) {
-        return header(route) + mBB.getMessage("no_transit");
+    private String notTransitTextResponseBuilder(ComparableRoute route, int userId) {
+        return header(route) + mBB.getMessage(userId, "no_transit");
     }
 
-    private String textResponseBuilder(ComparableRoute route, MapTimeTable timeTable, int chosen, boolean filtered) {
-        return header(route) + timeTableToString(timeTable, chosen, filtered);
+    private String textResponseBuilder(ComparableRoute route, MapTimeTable timeTable, int chosen, boolean filtered, int userId) {
+        return header(route) + timeTableToString(timeTable, chosen, filtered, userId);
     }
 
-    private String timeTableToString(MapTimeTable timeTable, int chosen, boolean filtered) {
+    private String timeTableToString(MapTimeTable timeTable, int chosen, boolean filtered, int userId) {
         StringBuilder text = new StringBuilder();
         List<String> stops = timeTable.getStops();
         List<LocalTime> times = timeTable.getTimes().get(chosen);
@@ -393,7 +372,7 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
             text.append("`")
                     .append(LocalTime.ofSecondOfDay(delay * 60).format(MapTimeTable.TIME_FORMATTER))
                     .append("` ")
-                    .append(mBB.getMessage("delay"))
+                    .append(mBB.getMessage(userId, "delay"))
                     .append("\n");
             now = now.minusMinutes(delay);
         }
@@ -423,17 +402,17 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
 
     // region keyboard
 
-    private InlineKeyboardMarkup notTransitInlineKeyboard(ComparableRoute route) throws EmptyKeyboardException {
-        return inlineKeyboardMarkupBuilder
-                .addFullRowInlineButton(mBB.getMessage("refresh"), routeQueryBuilder
+    private InlineKeyboardMarkup notTransitInlineKeyboard(ComparableRoute route, int userId) {
+        return new InlineKeyboardMarkupBuilder()
+                .addFullRowInlineButton(mBB.getMessage(userId, "refresh"), new RouteQueryBuilder()
                         .setCommand(getCommand())
                         .setId(route.getId())
                         .setValue("now")
-                        .build(true))
-                .build(true);
+                        .build())
+                .build();
     }
 
-    private InlineKeyboardMarkup stopsInlineKeyboard(ComparableId routeId, List<String> stops, List<String> stopsId, String stopId) throws EmptyKeyboardException {
+    private InlineKeyboardMarkup stopsInlineKeyboard(ComparableId routeId, List<String> stops, List<String> stopsId, String stopId, int userId) {
         int textButtonsSize;
         List<Map.Entry<String, String>> entryButtons = new ArrayList<>();
 
@@ -444,71 +423,69 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
             entryButtons.add(
                     new AbstractMap.SimpleEntry<>(
                             stopsId.get(i).equals(stopId) ? "· " + stops.get(i) + " ·" : stops.get(i),
-                            routeQueryBuilder
+                            new RouteQueryBuilder()
                                     .setCommand(getCommand())
                                     .setId(routeId)
                                     .setStopId(stopsId.get(i))
                                     .setValue("now")
-                                    .build(true)
+                                    .build()
                     )
             );
         }
 
-        return inlineKeyboardMarkupBuilder
+        return new InlineKeyboardMarkupBuilder()
                 .addSeparateRowsKeyboardButtons(1, entryButtons)
-                .addFullRowInlineButton(mBB.getMessage("full"), routeQueryBuilder
+                .addFullRowInlineButton(mBB.getMessage(userId, "full"), new RouteQueryBuilder()
                         .setCommand(getCommand())
                         .setId(routeId)
                         .setValue("now")
-                        .build(true))
-                .build(true);
+                        .build())
+                .build();
     }
 
-    protected void inlineKeyboardMarkupBuilder(ComparableRoute route, MapTimeTable timeTable, int chosen, String stopId) {
+    protected InlineKeyboardMarkupBuilder inlineKeyboardMarkupBuilder(ComparableRoute route, MapTimeTable timeTable, int chosen, String stopId, int userId) {
         if (chosen < 0 && chosen > timeTable.getTimes().size() - 1)
             chosen = nowIndex(timeTable);
 
-        List<Map.Entry<String, String>> routes = inlineKeyboardRowNavRouteBuilder.build(timeTable.getTimes().size(), chosen, 5, getCommand(), route.getId(), stopId);
+        List<Map.Entry<String, String>> routes = new InlineKeyboardRowNavRouteBuilder().build(timeTable.getTimes().size(), chosen, 5, getCommand(), route.getId(), stopId);
         List<Map.Entry<String, String>> buttons = new ArrayList<>();
 
-        routeQueryBuilder
+        RouteQueryBuilder builder = new RouteQueryBuilder()
                 .setCommand(getCommand())
                 .setId(route.getId())
                 .setStopId(stopId);
 
-        buttons.add(new AbstractMap.SimpleEntry<>(mBB.getMessage("hours"), routeQueryBuilder.setValue(HOURS).build(false)));
+        buttons.add(new AbstractMap.SimpleEntry<>(mBB.getMessage(userId, "hours"), builder.setValue(HOURS).build()));
 
-        buttons.add(new AbstractMap.SimpleEntry<>(mBB.getMessage("now"), routeQueryBuilder.setValue(NOW).build(false)));
+        buttons.add(new AbstractMap.SimpleEntry<>(mBB.getMessage(userId, "now"), builder.setValue(NOW).build()));
 
-        buttons.add(new AbstractMap.SimpleEntry<>(mBB.getMessage("filter"), routeQueryBuilder.setValue(FILTER).build(true)));
+        buttons.add(new AbstractMap.SimpleEntry<>(mBB.getMessage(userId, "filter"), builder.setValue(FILTER).build()));
 
-        inlineKeyboardMarkupBuilder
+        return new InlineKeyboardMarkupBuilder()
                 .addSeparateRowsKeyboardButtons(5, routes)
                 .addSeparateRowsKeyboardButtons(5, buttons);
 
     }
 
-    protected InlineKeyboardMarkup routesInlineKeyboard(ComparableRoute route, MapTimeTable timeTable, int chosen, String stopId) throws EmptyKeyboardException, IncorrectValueException, ExecutionException {
-        inlineKeyboardMarkupBuilder(route, timeTable, chosen, stopId);
-
-        return inlineKeyboardMarkupBuilder.build(true);
+    protected InlineKeyboardMarkup routesInlineKeyboard(ComparableRoute route, MapTimeTable timeTable, int chosen, String stopId, int userId) throws NotHandledException, ExecutionException {
+        return inlineKeyboardMarkupBuilder(route, timeTable, chosen, stopId, userId).build();
     }
 
-    protected abstract ReplyKeyboard linesKeyboard() throws EmptyKeyboardException, ExecutionException;
+    protected abstract ReplyKeyboard linesKeyboard() throws ExecutionException;
 
-    private InlineKeyboardMarkup hoursInlineKeyboard(ComparableRoute route, MapTimeTable timeTable, String stopId) throws EmptyKeyboardException {
+    private InlineKeyboardMarkup hoursInlineKeyboard(ComparableRoute route, MapTimeTable timeTable, String stopId, int userId) {
         List<Map.Entry<String, String>> hours = new ArrayList<>();
 
         LocalTime firstTime = getLastNotNull(timeTable.getTimes().get(0));
         LocalTime lastTime = getLastNotNull(timeTable.getTimes().get(timeTable.getTimes().size() - 1));
 
         if (firstTime == null || lastTime == null)
-            return notTransitInlineKeyboard(route);
+            return notTransitInlineKeyboard(route, userId);
 
         int fistHour = firstTime.getHour();
         int lastHour = lastTime.getHour();
 
-        routeQueryBuilder
+        RouteQueryBuilder builder = new RouteQueryBuilder()
                 .setCommand(getCommand())
                 .setId(route.getId())
                 .setStopId(stopId);
@@ -516,14 +493,14 @@ public abstract class AbstractRouteCommand extends DistinguishedUseCaseCommand i
         for (LocalTime i = LocalTime.of(fistHour, 0), last = LocalTime.of(lastHour, 0); i.isBefore(last); i = i.plusMinutes(30)) {
             hours.add(
                     new AbstractMap.SimpleImmutableEntry<>(i.format(MapTimeTable.TIME_FORMATTER),
-                            routeQueryBuilder.setValue(Integer.toString(timeIndex(timeTable, i))).build(false))
+                            builder.setValue(Integer.toString(timeIndex(timeTable, i))).build())
             );
         }
 
-        return inlineKeyboardMarkupBuilder
+        return new InlineKeyboardMarkupBuilder()
                 .addSeparateRowsKeyboardButtons(4, hours)
-                .addFullRowInlineButton(mBB.getMessage("now"), routeQueryBuilder.setValue(NOW).build(true))
-                .build(true);
+                .addFullRowInlineButton(mBB.getMessage(userId, "now"), builder.setValue(NOW).build())
+                .build();
     }
 
     // endregion keyboard

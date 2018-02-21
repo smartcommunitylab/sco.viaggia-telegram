@@ -3,7 +3,8 @@ package mobilityservice.model;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Id;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class ComparableId extends Id {
 

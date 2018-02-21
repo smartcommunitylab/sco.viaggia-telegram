@@ -1,26 +1,25 @@
 package viaggia.command.route.bus;
 
-import bot.exception.EmptyKeyboardException;
-import bot.keyboard.ReplyKeyboardMarkupBuilder;
-import bot.model.Command;
+import gekoramy.telegram.bot.keyboard.InlineKeyboardMarkupBuilder;
+import gekoramy.telegram.bot.keyboard.ReplyKeyboardMarkupBuilder;
+import gekoramy.telegram.bot.model.Command;
 import mobilityservice.model.*;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
 import viaggia.command.route.AbstractRouteCommand;
+import viaggia.command.route.general.query.RouteQueryBuilder;
 import viaggia.command.route.general.utils.Mode;
-import viaggia.exception.IncorrectValueException;
+import viaggia.exception.NotHandledException;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class BusCommand extends AbstractRouteCommand {
-
     private static final Command COMMAND_ID = new Command("bus", "bus_description");
-
-    private final ReplyKeyboardMarkupBuilder replyKeyboardMarkupBuilder = new ReplyKeyboardMarkupBuilder();
 
     public BusCommand() {
         super(COMMAND_ID, Mode.SHORT_NAME);
@@ -34,29 +33,29 @@ public class BusCommand extends AbstractRouteCommand {
     /**
      * @param arguments route.getShortName
      * @return bus.getDirects()
-     * @throws ExecutionException      cannot download
-     * @throws IncorrectValueException no route found
+     * @throws ExecutionException  cannot download
+     * @throws NotHandledException no route found
      */
     @Override
-    protected ComparableRoute getRoute(String arguments) throws ExecutionException, IncorrectValueException {
+    protected ComparableRoute getRoute(String arguments) throws ExecutionException, NotHandledException {
         Bus bus = BusDataManagement.getBusRoutes().getWithShortName(arguments);
-        if (bus == null) throw new IncorrectValueException();
+        if (bus == null) throw new NotHandledException();
 
         return bus.getDirect();
     }
 
     @Override
-    protected ComparableRoute getRoute(ComparableId id) throws ExecutionException, IncorrectValueException {
+    protected ComparableRoute getRoute(ComparableId id) throws ExecutionException, NotHandledException {
         ComparableRoute route = BusDataManagement.getBusRoutes().getRouteWithId(id);
-        if (route == null) throw new IncorrectValueException();
+        if (route == null) throw new NotHandledException();
 
         return route;
     }
 
     @Override
-    protected MapTimeTable getRouteTimeTable(ComparableRoute route) throws ExecutionException, IncorrectValueException {
+    protected MapTimeTable getRouteTimeTable(ComparableRoute route) throws ExecutionException, NotHandledException {
         MapTimeTable timeTable = BusDataManagement.getBusTimeTable(route.getId());
-        if (timeTable == null) throw new IncorrectValueException();
+        if (timeTable == null) throw new NotHandledException();
 
         return timeTable;
     }
@@ -67,43 +66,42 @@ public class BusCommand extends AbstractRouteCommand {
     }
 
     @Override
-    protected ReplyKeyboard linesKeyboard() throws EmptyKeyboardException, ExecutionException {
+    protected ReplyKeyboard linesKeyboard() throws ExecutionException {
         List<String> buses = new ComparableRoutes(getRoutes()).getShortNames();
-        return replyKeyboardMarkupBuilder
+        return new ReplyKeyboardMarkupBuilder()
                 .setResizeKeyboard(true)
                 .setOneTimeKeyboard(true)
                 .addKeyboardButtons(6, buses)
-                .build(true);
+                .build();
     }
 
     @Override
-    protected InlineKeyboardMarkup routesInlineKeyboard(ComparableRoute route, MapTimeTable timeTable, int chosen, String stopId) throws EmptyKeyboardException, IncorrectValueException, ExecutionException {
-        inlineKeyboardMarkupBuilder(route, timeTable, chosen, stopId);
+    protected InlineKeyboardMarkup routesInlineKeyboard(ComparableRoute route, MapTimeTable timeTable, int chosen, String stopId, int userId) throws NotHandledException, ExecutionException {
+        InlineKeyboardMarkupBuilder keyboardBuilder = inlineKeyboardMarkupBuilder(route, timeTable, chosen, stopId, userId);
+        RouteQueryBuilder queryBuilder = new RouteQueryBuilder()
+                .setCommand(getCommand())
+                .setValue(NOW);
 
         Bus bus = getBus(route.getRouteShortName());
 
         if (bus.isDirect(route) && bus.hasReturn())
-            inlineKeyboardMarkupBuilder
-                    .addFullRowInlineButton(mBB.getMessage("return"), routeQueryBuilder
-                            .setCommand(getCommand())
+            keyboardBuilder
+                    .addFullRowInlineButton(mBB.getMessage(userId, "return"), queryBuilder
                             .setId(bus.getReturn().getId())
-                            .setValue(NOW)
-                            .build(true));
+                            .build());
 
         if (bus.isReturn(route))
-            inlineKeyboardMarkupBuilder
-                    .addFullRowInlineButton(mBB.getMessage("direct"), routeQueryBuilder
-                            .setCommand(getCommand())
+            keyboardBuilder
+                    .addFullRowInlineButton(mBB.getMessage(userId, "direct"), queryBuilder
                             .setId(bus.getDirect().getId())
-                            .setValue(NOW)
-                            .build(true));
+                            .build());
 
-        return inlineKeyboardMarkupBuilder.build(true);
+        return keyboardBuilder.build();
     }
 
-    private Bus getBus(String busShortName) throws ExecutionException, IncorrectValueException {
+    private Bus getBus(String busShortName) throws ExecutionException, NotHandledException {
         Bus bus = BusDataManagement.getBusRoutes().getWithShortName(busShortName);
-        if (bus == null) throw new IncorrectValueException();
+        if (bus == null) throw new NotHandledException();
 
         return bus;
     }

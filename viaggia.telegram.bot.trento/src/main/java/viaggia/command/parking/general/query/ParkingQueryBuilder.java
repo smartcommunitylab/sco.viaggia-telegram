@@ -1,13 +1,14 @@
 package viaggia.command.parking.general.query;
 
-import bot.model.Command;
-import bot.model.query.QueryBuilder;
+import gekoramy.telegram.bot.model.Command;
+import gekoramy.telegram.bot.model.query.QueryBuilder;
 
 /**
- * Created by Luca Mosetti in 2017
- * <p>
  * QueryBuilder for ParkingCommand in general
  * (Bike and ParkingCommand information)
+ *
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class ParkingQueryBuilder extends QueryBuilder implements ParkingRegex {
 

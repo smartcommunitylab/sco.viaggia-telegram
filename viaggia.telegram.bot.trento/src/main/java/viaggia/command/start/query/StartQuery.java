@@ -1,15 +1,16 @@
 package viaggia.command.start.query;
 
-import bot.model.query.Query;
+import gekoramy.telegram.bot.model.query.Query;
 
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class StartQuery extends Query implements StartRegex {
 
-    StartQuery(Map map) {
+    StartQuery(Map<String, String> map) {
         super(map);
     }
 

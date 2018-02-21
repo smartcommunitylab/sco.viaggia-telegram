@@ -1,6 +1,6 @@
 package viaggia.command.parking.parking;
 
-import bot.model.Command;
+import gekoramy.telegram.bot.model.Command;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 import viaggia.command.parking.AbstractParkingCommand;
 import viaggia.command.parking.general.utils.Unit;
@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class ParkingCommand extends AbstractParkingCommand {
-
     private static final Command COMMAND_ID = new Command("parking", "parking_description");
 
     public ParkingCommand() {
@@ -30,9 +30,9 @@ public class ParkingCommand extends AbstractParkingCommand {
     }
 
     @Override
-    protected String slotsToString(Parking parking) {
+    protected String slotsToString(Parking parking, int userId) {
         return parking.isMonitored() && parking.getSlotsAvailable() >= 0 ?
-                mBB.getMessage("slots_available", Integer.toString(parking.getSlotsAvailable()), Integer.toString(parking.getSlotsTotal())) :
-                mBB.getMessage("slots", Integer.toString(parking.getSlotsTotal()));
+                mBB.getMessage(userId, "slots_available", Integer.toString(parking.getSlotsAvailable()), Integer.toString(parking.getSlotsTotal())) :
+                mBB.getMessage(userId, "slots", Integer.toString(parking.getSlotsTotal()));
     }
 }

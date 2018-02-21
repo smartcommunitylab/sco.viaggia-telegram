@@ -1,6 +1,6 @@
 package viaggia.command.route.general.utils;
 
-import bot.model.Command;
+import gekoramy.telegram.bot.model.Command;
 import mobilityservice.model.ComparableId;
 import viaggia.command.route.general.query.RouteQueryBuilder;
 
@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class InlineKeyboardRowNavRouteBuilder {
 
@@ -107,7 +108,7 @@ public class InlineKeyboardRowNavRouteBuilder {
                 .setId(id)
                 .setValue(Integer.toString(index))
                 .setStopId(stopId)
-                .build(true);
+                .build();
     }
 
 }
