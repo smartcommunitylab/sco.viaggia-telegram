@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class TrainCommand extends AbsRouteCommand {
     private static final Command COMMAND_ID = new Command("train", "train_description");
+    private final TrainDataManagement data = new TrainDataManagement();
 
     public TrainCommand() {
         super(COMMAND_ID, Mode.LONG_NAME);
@@ -29,12 +30,11 @@ public class TrainCommand extends AbsRouteCommand {
 
     @Override
     public void init() {
-        TrainDataManagement.scheduleUpdate();
     }
 
     @Override
     protected ComparableRoute getRoute(String arguments) throws ExecutionException, NotHandledException {
-        ComparableRoute route = TrainDataManagement.getTrainsComparableRoutes().getWithLongName(arguments);
+        ComparableRoute route = data.getTrainsComparableRoutes().getWithLongName(arguments);
         if (route == null) throw new NotHandledException();
 
         return route;
@@ -42,7 +42,7 @@ public class TrainCommand extends AbsRouteCommand {
 
     @Override
     protected ComparableRoute getRoute(ComparableId id) throws ExecutionException, NotHandledException {
-        ComparableRoute route = TrainDataManagement.getTrainsComparableRoutes().getWithId(id);
+        ComparableRoute route = data.getTrainsComparableRoutes().getWithId(id);
         if (route == null) throw new NotHandledException();
 
         return route;
@@ -50,12 +50,12 @@ public class TrainCommand extends AbsRouteCommand {
 
     @Override
     protected ComparableRoutes getRoutes() throws ExecutionException {
-        return TrainDataManagement.getTrainsComparableRoutes();
+        return data.getTrainsComparableRoutes();
     }
 
     @Override
     protected MapTimeTable getRouteTimeTable(ComparableId routeId) throws ExecutionException, NotHandledException {
-        MapTimeTable routeTT = TrainDataManagement.getTrainTimetable(routeId);
+        MapTimeTable routeTT = data.getTimeTable(routeId);
         if (routeTT == null) throw new NotHandledException();
 
         return routeTT;
@@ -63,17 +63,18 @@ public class TrainCommand extends AbsRouteCommand {
 
     @Override
     protected List<MapTimeTable> getRouteTimeTables() {
-        return TrainDataManagement.getBusTimeTables();
+        return data.getTimeTables();
     }
 
     @Override
     protected List<ComparableStop> getSortedStops(Location location) {
-        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.stopDistance(Unit.METER, location, TrainDataManagement.getStops()));
+        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.stopDistance(Unit.KILOMETER, location, data.getStops()));
         List<ComparableStop> closestStops = new ArrayList<>();
 
-        do {
-            closestStops.add(stops.poll().getValue());
-        } while (stops.peek().getDistance() > 500);
+        if (!stops.isEmpty()) {
+            do closestStops.add(stops.poll().getValue());
+            while (stops.peek() != null && stops.peek().getDistance() < 1);
+        }
 
         return closestStops;
     }

@@ -7,7 +7,7 @@ package viaggia.utils;
 public enum Unit {
 
     KILOMETER(1.609344, "km"),
-    METER(KILOMETER.getValue() * 100, "m"),
+    METER(KILOMETER.getValue() * 1000, "m"),
     NAUTICAL_MILES(0.8684, "nmi");
 
     private final double value;

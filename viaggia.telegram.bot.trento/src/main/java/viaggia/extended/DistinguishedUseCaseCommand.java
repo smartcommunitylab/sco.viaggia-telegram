@@ -21,7 +21,7 @@ public class DistinguishedUseCaseCommand extends UseCaseCommand {
     protected final MessageBundleBuilder mBB = new MessageBundleBuilder();
 
 
-    public DistinguishedUseCaseCommand(Command command) {
+    protected DistinguishedUseCaseCommand(Command command) {
         super(command);
     }
 

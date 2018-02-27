@@ -10,7 +10,7 @@ import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
  * @author Luca Mosetti
  * @since 2017
  */
-public class Main {
+class Main {
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 

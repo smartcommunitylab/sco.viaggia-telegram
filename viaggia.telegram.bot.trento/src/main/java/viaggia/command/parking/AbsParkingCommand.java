@@ -51,7 +51,7 @@ public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
     private final Unit unit;
     private final int maxDistance;
 
-    public AbsParkingCommand(Command command, int maxDistance, Unit unit) {
+    protected AbsParkingCommand(Command command, int maxDistance, Unit unit) {
         super(command);
         this.maxDistance = maxDistance;
         this.unit = unit;

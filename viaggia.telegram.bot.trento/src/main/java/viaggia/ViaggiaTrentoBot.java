@@ -25,7 +25,7 @@ import javax.ws.rs.core.Response;
  * @author Luca Mosetti
  * @since 2017
  */
-public class ViaggiaTrentoBot extends UseCaseBot implements ChatbaseHandler {
+class ViaggiaTrentoBot extends UseCaseBot implements ChatbaseHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ViaggiaTrentoBot.class);
     private static final ChatbaseMonitor monitor = new ChatbaseMonitor("2.2");

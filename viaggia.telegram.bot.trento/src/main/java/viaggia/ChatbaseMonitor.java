@@ -26,7 +26,7 @@ import java.util.Collections;
  * @author Luca Mosetti
  * @since 02/2018
  */
-public class ChatbaseMonitor implements Monitor {
+class ChatbaseMonitor implements Monitor {
 
     private final GenericMessageAgentBuilder builderGMAgent;
     private final GenericMessageUserBuilder builderGMUser;

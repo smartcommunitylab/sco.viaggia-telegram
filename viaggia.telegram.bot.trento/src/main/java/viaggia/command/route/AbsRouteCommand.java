@@ -63,7 +63,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
 
     private final Mode mode;
 
-    public AbsRouteCommand(Command command, Mode mode) {
+    protected AbsRouteCommand(Command command, Mode mode) {
         super(command);
         this.mode = mode;
     }
@@ -115,7 +115,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
     protected void respondLocation(MessageResponder absSender, Chat chat, User user, Location location) {
         super.respondLocation(absSender, chat, user, location);
         try {
-            Map<ComparableStop, List<MapTimeTable>> toSend = new HashMap<>();
+            Map<ComparableStop, List<MapTimeTable>> toSend = new LinkedHashMap<>();
 
             for (ComparableStop stop : getSortedStops(location)) {
                 toSend.put(stop, getRouteTimeTables().stream().filter(mapTimeTable -> mapTimeTable.getStops().contains(stop)).collect(Collectors.toList()));

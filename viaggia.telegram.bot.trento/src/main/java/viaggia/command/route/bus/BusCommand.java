@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class BusCommand extends AbsRouteCommand {
     private static final Command COMMAND_ID = new Command("bus", "bus_description");
+    private final BusDataManagement data = new BusDataManagement();
 
     public BusCommand() {
         super(COMMAND_ID, Mode.SHORT_NAME);
@@ -31,11 +32,10 @@ public class BusCommand extends AbsRouteCommand {
 
     @Override
     public void init() {
-        BusDataManagement.scheduleUpdate();
     }
 
     private Bus getBus(ComparableId routeId) throws ExecutionException, NotHandledException {
-        Bus bus = BusDataManagement.getBusRoutes().getWithRouteId(routeId);
+        Bus bus = data.getBusRoutes().getWithRouteId(routeId);
         if (bus == null) throw new NotHandledException();
 
         return bus;
@@ -49,7 +49,7 @@ public class BusCommand extends AbsRouteCommand {
      */
     @Override
     protected ComparableRoute getRoute(String shortName) throws ExecutionException, NotHandledException {
-        Bus bus = BusDataManagement.getBusRoutes().getWithShortName(shortName);
+        Bus bus = data.getBusRoutes().getWithShortName(shortName);
         if (bus == null) throw new NotHandledException();
 
         return bus.getDirect();
@@ -57,7 +57,7 @@ public class BusCommand extends AbsRouteCommand {
 
     @Override
     protected ComparableRoute getRoute(ComparableId id) throws ExecutionException, NotHandledException {
-        ComparableRoute route = BusDataManagement.getBusRoutes().getRouteWithId(id);
+        ComparableRoute route = data.getBusRoutes().getRouteWithId(id);
         if (route == null) throw new NotHandledException();
 
         return route;
@@ -65,12 +65,12 @@ public class BusCommand extends AbsRouteCommand {
 
     @Override
     protected ComparableRoutes getRoutes() throws ExecutionException {
-        return BusDataManagement.getBusRoutes().getDirects();
+        return data.getBusRoutes().getDirects();
     }
 
     @Override
     protected MapTimeTable getRouteTimeTable(ComparableId routeId) throws ExecutionException, NotHandledException {
-        MapTimeTable timeTable = BusDataManagement.getBusTimeTable(routeId);
+        MapTimeTable timeTable = data.getTimeTable(routeId);
         if (timeTable == null) throw new NotHandledException();
 
         return timeTable;
@@ -78,17 +78,18 @@ public class BusCommand extends AbsRouteCommand {
 
     @Override
     protected List<MapTimeTable> getRouteTimeTables() {
-        return BusDataManagement.getBusTimeTables();
+        return data.getTimeTables();
     }
 
     @Override
     protected List<ComparableStop> getSortedStops(Location location) {
-        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.stopDistance(Unit.METER, location, BusDataManagement.getStops()));
+        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.stopDistance(Unit.METER, location, data.getStops()));
         List<ComparableStop> closestStops = new ArrayList<>();
 
-        do {
-            closestStops.add(stops.poll().getValue());
-        } while (stops.peek().getDistance() < 10);
+        if (!stops.isEmpty()) {
+            do closestStops.add(stops.poll().getValue());
+            while (stops.peek() != null && stops.peek().getDistance() < 200);
+        }
 
         return closestStops;
     }
