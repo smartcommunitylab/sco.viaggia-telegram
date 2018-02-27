@@ -33,7 +33,7 @@ public class Main {
         try {
             botsApi.registerBot(new ViaggiaTrentoBot(botName, botToken, chatbaseToken));
         } catch (TelegramApiRequestException e) {
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
         }
     }
 }

@@ -2,8 +2,8 @@ package viaggia.command.parking.bike;
 
 import gekoramy.telegram.bot.model.Command;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
-import viaggia.command.parking.AbstractParkingCommand;
-import viaggia.command.parking.general.utils.Unit;
+import viaggia.command.parking.AbsParkingCommand;
+import viaggia.utils.Unit;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutionException;
  * @author Luca Mosetti
  * @since 2017
  */
-public class BikeCommand extends AbstractParkingCommand {
+public class BikeCommand extends AbsParkingCommand {
     private static final Command COMMAND_ID = new Command("bike", "bike_description");
 
     public BikeCommand() {

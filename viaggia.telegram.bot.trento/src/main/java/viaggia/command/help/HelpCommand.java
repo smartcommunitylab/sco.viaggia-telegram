@@ -12,8 +12,7 @@ import viaggia.extended.CommandRegistryUtils;
 import viaggia.extended.DistinguishedUseCaseCommand;
 
 /**
- * Helper message responder
- * it shows a list of all registered commands
+ * Shows a list of all registered commands with their description
  *
  * @author Luca Mosetti
  * @since 2017
@@ -31,13 +30,21 @@ public class HelpCommand extends DistinguishedUseCaseCommand {
     @Override
     public void respondCommand(MessageResponder absSender, Chat chat, User user) {
         super.respondCommand(absSender, chat, user);
-        absSender.send(helpMessage(user.getId()));
+        try {
+            absSender.send(helpMessage(user.getId()));
+        } catch (Throwable e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     @Override
     public void respondText(MessageResponder absSender, Chat chat, User user, String arguments) {
         super.respondText(absSender, chat, user, arguments);
-        absSender.send(helpMessage(user.getId()));
+        try {
+            absSender.send(helpMessage(user.getId()));
+        } catch (Throwable e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     // region SendMessage

@@ -28,7 +28,7 @@ public class ContributeCommand extends DistinguishedUseCaseCommand {
         try {
             absSender.send(contributeMessage(user.getId()));
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -38,7 +38,7 @@ public class ContributeCommand extends DistinguishedUseCaseCommand {
         try {
             absSender.send(contributeMessage(user.getId()));
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 

@@ -4,10 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
-import mobilityservice.model.ComparableId;
-import mobilityservice.model.ComparableRoute;
-import mobilityservice.model.ComparableRoutes;
-import mobilityservice.model.MapTimeTable;
+import mobilityservice.model.*;
 import mobilityservice.singleton.MobilityDataServicePro;
 import mobilityservice.singleton.MobilityDataServiceProSingleton;
 import mobilityservice.singleton.MobilityDataServiceTrento;
@@ -15,9 +12,10 @@ import mobilityservice.singleton.MobilityDataServiceTrentoSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.*;
 
 /**
  * Downloads and caches the Train information
@@ -31,6 +29,8 @@ class TrainDataManagement {
     private static final MobilityDataServiceTrento trento = MobilityDataServiceTrentoSingleton.getInstance();
     private static final MobilityDataServicePro service = MobilityDataServiceProSingleton.getInstance();
     private static final LoadingCache<String, ComparableRoutes> cacheTrainRoutes;
+    private static final ConcurrentHashMap<ComparableId, MapTimeTable> trainTimetables = new ConcurrentHashMap<>();
+    private static final Set<ComparableStop> stops = new ConcurrentSkipListSet<>();
     private static final LoadingCache<ComparableId, MapTimeTable> cacheTrainTimetables;
 
     static {
@@ -50,23 +50,30 @@ class TrainDataManagement {
                 });
 
         cacheTrainTimetables = CacheBuilder.newBuilder()
+                .expireAfterWrite(1, TimeUnit.MINUTES)
                 .build(new CacheLoader<ComparableId, MapTimeTable>() {
                     @Override
                     public MapTimeTable load(ComparableId comparableId) throws Exception {
-                        return service.getMapTimeTable(comparableId.getAgency(), comparableId.getId(), System.currentTimeMillis(), null);
+                        return service.updateDelays(trainTimetables.get(comparableId));
                     }
                 });
 
     }
 
     private static void refreshTrainTimeTable() {
+        long begin = System.currentTimeMillis();
+        List<ComparableStop> tmp = new ArrayList<>();
         try {
             for (ComparableRoute route : getTrainsComparableRoutes()) {
-                cacheTrainTimetables.refresh(route.getId());
+                trainTimetables.put(route.getId(), service.getMapTimeTable(route.getId(), System.currentTimeMillis(), null));
+                tmp.addAll(trainTimetables.get(route.getId()).getStops());
             }
-        } catch (ExecutionException e) {
-            logger.error(e.getMessage());
+        } catch (MobilityServiceException | ExecutionException e) {
+            logger.error("", e);
         }
+        stops.clear();
+        stops.addAll(tmp);
+        logger.info(System.currentTimeMillis() - begin + "ms");
     }
 
     static void scheduleUpdate() {
@@ -83,4 +90,11 @@ class TrainDataManagement {
         return cacheTrainTimetables.get(comparableId);
     }
 
+    static Set<ComparableStop> getStops() {
+        return stops;
+    }
+
+    static List<MapTimeTable> getBusTimeTables() {
+        return new ArrayList<>(trainTimetables.values());
+    }
 }

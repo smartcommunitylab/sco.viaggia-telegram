@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Presentation message
+ * Also inline helper
+ *
  * @author Luca Mosetti
  * @since 2017
  */
@@ -47,7 +50,11 @@ public class StartCommand extends DistinguishedUseCaseCommand {
     @Override
     protected void respondCommand(MessageResponder absSender, Chat chat, User user) {
         super.respondCommand(absSender, chat, user);
-        startMessage(absSender, user.getId());
+        try {
+            startMessage(absSender, user.getId());
+        } catch (Throwable e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -67,7 +74,7 @@ public class StartCommand extends DistinguishedUseCaseCommand {
                     break;
             }
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -81,7 +88,7 @@ public class StartCommand extends DistinguishedUseCaseCommand {
                     .setReplyMarkup(useCaseCommandInlineKeyboard(q.getUseCase(), user.getId())));
 
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -107,7 +114,6 @@ public class StartCommand extends DistinguishedUseCaseCommand {
                 .setReplyMarkup(new ReplyKeyboardRemove()))
                 .send(newsMessage(userId))
                 .toComplete();
-
     }
 
     private SendMessage newsMessage(int userId) {

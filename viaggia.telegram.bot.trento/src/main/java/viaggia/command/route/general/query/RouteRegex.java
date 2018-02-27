@@ -10,4 +10,5 @@ interface RouteRegex {
     String AGENCY = "AG";
     String VALUE = "VAL";
     String STOP_ID = "SD";
+    String NEW_MESSAGE = "NM";
 }

@@ -3,6 +3,7 @@ package mobilityservice.model;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,7 +31,7 @@ public class Parkings extends ArrayList<Parking> {
         return null;
     }
 
-    public void putAll(List<Parking> parkings) {
+    public void putAll(Collection<Parking> parkings) {
         for (Parking p : parkings) {
             if (this.contains(p))
                 this.set(this.indexOf(p), p);

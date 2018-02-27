@@ -1,8 +1,5 @@
 package viaggia.command.parking;
 
-import com.google.common.base.Functions;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Ordering;
 import gekoramy.telegram.bot.keyboard.InlineKeyboardMarkupBuilder;
 import gekoramy.telegram.bot.keyboard.ReplyKeyboardMarkupBuilder;
 import gekoramy.telegram.bot.model.Command;
@@ -31,28 +28,31 @@ import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
 import viaggia.command.parking.general.query.ParkingQuery;
 import viaggia.command.parking.general.query.ParkingQueryBuilder;
 import viaggia.command.parking.general.query.ParkingQueryParser;
-import viaggia.command.parking.general.utils.DistanceCalculator;
-import viaggia.command.parking.general.utils.Unit;
 import viaggia.exception.NotHandledException;
 import viaggia.extended.DistinguishedUseCaseCommand;
+import viaggia.utils.Distance;
+import viaggia.utils.DistanceCalculator;
+import viaggia.utils.Unit;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
+ * General parking info
+ *
  * @author Luca Mosetti
  * @since 2017
  */
-public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand {
+public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
 
     private final Unit unit;
     private final int maxDistance;
 
-    public AbstractParkingCommand(Command command, int maxDistance, Unit unit) {
+    public AbsParkingCommand(Command command, int maxDistance, Unit unit) {
         super(command);
         this.maxDistance = maxDistance;
         this.unit = unit;
@@ -65,7 +65,7 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
             absSender.send(parkingMessage(chat, user.getId()))
                     .toComplete();
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -89,22 +89,22 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
             absSender.toComplete();
             absSender.setHandled(false);
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
     @Override
     public void respondLocation(MessageResponder absSender, Chat chat, User user, Location location) {
         try {
-            Map<String, Double> bikeDistance = getParkings(location);
+            List<Distance<Parking>> distances = getClosestParking(location);
 
             absSender.send(new SendMessage()
                     .setParseMode(ParseMode.MARKDOWN)
-                    .setText(textBuilderDistance(bikeDistance, user.getId()))
+                    .setText(textBuilderDistance(distances, user.getId()))
                     .setReplyMarkup(keyboardMarkup(chat)));
 
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -122,7 +122,7 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
             absSender.answer(new AnswerInlineQuery()
                     .setResults(results(arguments, user.getId())));
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -146,9 +146,9 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
 
         } catch (NotHandledException e) {
             absSender.setHandled(false);
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -181,10 +181,10 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
         return parking;
     }
 
-    private Parking getParking(String arguments) throws ExecutionException, NotHandledException {
+    private Parking getParking(String name) throws ExecutionException, NotHandledException {
         Parkings parkings = new Parkings();
         parkings.putAll(getParkings());
-        Parking parking = parkings.get(arguments);
+        Parking parking = parkings.get(name);
 
         if (parking == null) throw new NotHandledException();
 
@@ -198,10 +198,9 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
         return filter == null || filter.isEmpty() ? p : p.subParkings(filter);
     }
 
-    private Map<String, Double> getParkings(Location location) throws ExecutionException {
-        Map<String, Double> map = DistanceCalculator.calculate(getParkings(), location, unit).entrySet().stream().filter(entry -> entry.getValue() < maxDistance).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b));
-
-        return ImmutableSortedMap.copyOf(map, Ordering.natural().onResultOf(Functions.forMap(map)));
+    private List<Distance<Parking>> getClosestParking(Location location) throws ExecutionException {
+        return DistanceCalculator.calculateParkings(unit, location, new HashSet<>(getParkings()))
+                .stream().filter(distance -> distance.getDistance() < maxDistance).collect(Collectors.toList());
     }
 
     // endregion getters
@@ -230,7 +229,7 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
 
     // region text
 
-    private String textBuilderDistance(Map<String, Double> parkingDistance, int userId) {
+    private String textBuilderDistance(List<Distance<Parking>> parkingDistance, int userId) {
         return mBB.getMessage(userId, "neighbours") + "\n" + distanceToString(parkingDistance);
     }
 
@@ -238,26 +237,26 @@ public abstract class AbstractParkingCommand extends DistinguishedUseCaseCommand
 
     protected abstract String slotsToString(Parking parking, int userId);
 
-    private String distanceToString(Map<String, Double> parkingDistance) {
+    private String distanceToString(List<Distance<Parking>> parkingDistance) {
         StringBuilder text = new StringBuilder();
         DecimalFormat df = new DecimalFormat("0.0");
 
-        for (Map.Entry<String, Double> entry : parkingDistance.entrySet()) {
+        for (Distance<Parking> distance : parkingDistance) {
             text.append("`");
 
             switch (unit) {
                 case KILOMETER:
-                    text.append(String.format("%3s", df.format(entry.getValue())));
+                    text.append(String.format("%3s", df.format(distance.getDistance())));
                     break;
                 case METER:
-                    text.append(String.format("%3s", entry.getValue().intValue()));
+                    text.append(String.format("%3s", distance.getDistance().intValue()));
                     break;
                 case NAUTICAL_MILES:
-                    text.append(String.format("%3s", df.format(entry.getValue())));
+                    text.append(String.format("%3s", df.format(distance.getDistance())));
                     break;
             }
 
-            text.append(unit.getAbbreviation()).append("` - ").append(entry.getKey()).append("\n");
+            text.append(unit.getAbbreviation()).append("` - ").append(distance.getValue().getName()).append("\n");
         }
 
         return text.toString();

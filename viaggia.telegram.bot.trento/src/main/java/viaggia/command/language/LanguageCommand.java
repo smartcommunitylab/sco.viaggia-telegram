@@ -22,6 +22,8 @@ import viaggia.extended.DistinguishedUseCaseCommand;
 import java.util.*;
 
 /**
+ * Permit to change the bot language
+ *
  * @author Luca Mosetti
  * @since 2017
  */
@@ -39,7 +41,7 @@ public class LanguageCommand extends DistinguishedUseCaseCommand {
         try {
             absSender.send(languageMessage(user.getId()));
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -49,7 +51,7 @@ public class LanguageCommand extends DistinguishedUseCaseCommand {
         try {
             absSender.send(languageMessage(user.getId()));
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 
@@ -67,7 +69,7 @@ public class LanguageCommand extends DistinguishedUseCaseCommand {
             absSender.answer(new AnswerCallbackQuery()
                     .setText(Locale.forLanguageTag(q.getLanguage()).getDisplayLanguage()));
         } catch (Throwable e) {
-            logger.error(getClass().toString(), e);
+            logger.error(e.getMessage(), e);
         }
     }
 

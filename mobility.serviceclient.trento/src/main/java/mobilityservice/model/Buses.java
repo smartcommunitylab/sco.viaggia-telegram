@@ -4,6 +4,7 @@ import it.sayservice.platform.smartplanner.data.message.otpbeans.Route;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -17,31 +18,21 @@ public class Buses extends ArrayList<Bus> {
 
         for (ComparableRoute route : routes.stream().map(ComparableRoute::new).collect(Collectors.toList())) {
             bus = this.getWithShortName(route.getRouteShortName());
-            if (bus == null) {
-                bus = new Bus();
-                this.add(bus);
-            }
+            if (bus == null) this.add(bus = new Bus());
             bus.addRoute(route);
         }
     }
 
     public ComparableRoute getRouteWithId(ComparableId id) {
-        for (Bus bus : this) {
-            ComparableRoute route = bus.getWithId(id);
-            if (route != null)
-                return route;
-        }
+        return this.stream().map(bus -> bus.getWithId(id)).filter(Objects::nonNull).findFirst().orElse(null);
+    }
 
-        return null;
+    public Bus getWithRouteId(ComparableId id) {
+        return this.stream().filter(bus -> bus.getWithId(id) != null).findFirst().orElse(null);
     }
 
     public Bus getWithShortName(String shortName) {
-        for (Bus bus : this) {
-            if (bus.getRouteShortName().equals(shortName))
-                return bus;
-        }
-
-        return null;
+        return this.stream().filter(bus -> bus.getRouteShortName().equals(shortName)).findFirst().orElse(null);
     }
 
     public List<String> getShortNames() {
@@ -49,14 +40,7 @@ public class Buses extends ArrayList<Bus> {
     }
 
     public Buses subBuses(String filter) {
-        Buses subBuses = new Buses();
-
-        for (Bus bus : this) {
-            if (bus.getDirect().getRouteShortName().toLowerCase().contains(filter.toLowerCase()))
-                subBuses.add(bus);
-        }
-
-        return subBuses;
+        return this.stream().filter(bus -> bus.getDirect().getRouteShortName().toLowerCase().contains(filter.toLowerCase())).collect(Collectors.toCollection(Buses::new));
     }
 
     public ComparableRoutes getDirects() {

@@ -33,4 +33,9 @@ public class RouteQueryBuilder extends QueryBuilder implements RouteRegex {
         put(STOP_ID, stopId);
         return this;
     }
+
+    public RouteQueryBuilder newMessage() {
+        put(NEW_MESSAGE, "1");
+        return this;
+    }
 }

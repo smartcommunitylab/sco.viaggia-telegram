@@ -46,9 +46,9 @@ public class MobilityDataServiceTrento {
         }
     };
 
-    private static final AlphanumComparator<Parking> PARKING_COMPARATOR = new AlphanumComparator<Parking>() {
+    private static final AlphanumComparator<it.sayservice.platform.smartplanner.data.message.otpbeans.Parking> PARKING_COMPARATOR = new AlphanumComparator<it.sayservice.platform.smartplanner.data.message.otpbeans.Parking>() {
         @Override
-        public int compare(Parking o1, Parking o2) {
+        public int compare(it.sayservice.platform.smartplanner.data.message.otpbeans.Parking o1, it.sayservice.platform.smartplanner.data.message.otpbeans.Parking o2) {
             return compareString(o1.getName(), o2.getName());
         }
     };
@@ -92,7 +92,7 @@ public class MobilityDataServiceTrento {
 
     private static void correctsBikeNames(Parkings parkings) {
         for (Parking p : parkings) {
-            parkings.get(parkings.indexOf(p)).setName(p.getName().replace(" - Trento", ""));
+            p.setName(p.getName().replace(" - Trento", ""));
         }
     }
 

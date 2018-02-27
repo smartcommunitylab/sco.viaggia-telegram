@@ -1,21 +1,15 @@
 package mobilityservice.model;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * @author Luca Mosetti
  * @since 2017
  */
 public class Bus {
 
-    // Map.Entry<String, Map<String, ComparableRoute>
-
-    private final static String DIRECT = "DIRECT";
-    private final static String RETURN = "RETURN";
+    private ComparableRoute busDirect;
+    private ComparableRoute busReturn;
 
     private String routeShortName;
-    private Map<String, ComparableRoute> routes = new HashMap<>(2);
 
     public boolean addRoute(ComparableRoute route) {
         if (routeShortName == null)
@@ -50,43 +44,40 @@ public class Bus {
     }
 
     public ComparableRoute getDirect() {
-        return this.routes.get(DIRECT);
+        return this.busDirect;
     }
 
     private void setDirect(ComparableRoute comparableRoute) {
-        this.routes.put(DIRECT, comparableRoute);
+        busDirect = comparableRoute;
     }
 
     public ComparableRoute getReturn() {
-        return this.routes.get(RETURN);
+        return this.busReturn;
     }
 
     private void setReturn(ComparableRoute comparableRoute) {
-        this.routes.put(RETURN, comparableRoute);
+        busReturn = comparableRoute;
     }
 
-    public ComparableRoute getWithId(ComparableId id) {
-        for (Map.Entry<String, ComparableRoute> entry : routes.entrySet()) {
-            if (entry.getValue().getId().equals(id))
-                return entry.getValue();
-        }
+    ComparableRoute getWithId(ComparableId id) {
+        if (busDirect.getId().equals(id))
+            return busDirect;
+
+        if (hasReturn() && busReturn.getId().equals(id))
+            return busReturn;
 
         return null;
     }
 
-    private boolean hasDirect() {
-        return this.routes.containsKey(DIRECT);
-    }
-
     public boolean hasReturn() {
-        return this.routes.containsKey(RETURN);
+        return busReturn != null;
     }
 
-    public boolean isDirect(ComparableRoute route) {
-        return hasDirect() && getDirect().equals(route);
+    public boolean isDirect(ComparableId routeId) {
+        return getDirect().getId().equals(routeId);
     }
 
-    public boolean isReturn(ComparableRoute route) {
-        return hasReturn() && getReturn().equals(route);
+    public boolean isReturn(ComparableId routeId) {
+        return hasReturn() && getReturn().getId().equals(routeId);
     }
 }

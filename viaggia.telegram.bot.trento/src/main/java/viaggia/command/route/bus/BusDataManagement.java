@@ -4,10 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
-import mobilityservice.model.Bus;
-import mobilityservice.model.Buses;
-import mobilityservice.model.ComparableId;
-import mobilityservice.model.MapTimeTable;
+import mobilityservice.model.*;
 import mobilityservice.singleton.MobilityDataServicePro;
 import mobilityservice.singleton.MobilityDataServiceProSingleton;
 import mobilityservice.singleton.MobilityDataServiceTrento;
@@ -15,12 +12,14 @@ import mobilityservice.singleton.MobilityDataServiceTrentoSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.*;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 class BusDataManagement {
 
@@ -28,7 +27,9 @@ class BusDataManagement {
     private static final MobilityDataServiceTrento trento = MobilityDataServiceTrentoSingleton.getInstance();
     private static final MobilityDataServicePro service = MobilityDataServiceProSingleton.getInstance();
     private static final LoadingCache<String, Buses> cacheBuses;
-    private static final LoadingCache<ComparableId, MapTimeTable> cacheTrentoBusTimetables;
+    private static final ConcurrentHashMap<ComparableId, MapTimeTable> busTimetables = new ConcurrentHashMap<>();
+    private static final ConcurrentSkipListSet<ComparableStop> stops = new ConcurrentSkipListSet<>();
+    private static final LoadingCache<ComparableId, MapTimeTable> cacheBusTimetables;
 
     static {
         cacheBuses = CacheBuilder.newBuilder()
@@ -45,29 +46,41 @@ class BusDataManagement {
                     }
                 });
 
-        cacheTrentoBusTimetables = CacheBuilder.newBuilder()
+        // optimisation: by now, there are no delay info for buses
+        cacheBusTimetables = CacheBuilder.newBuilder()
+                //.expireAfterWrite(1, TimeUnit.MINUTES)
                 .build(new CacheLoader<ComparableId, MapTimeTable>() {
                     @Override
                     public MapTimeTable load(ComparableId comparableId) throws Exception {
-                        return service.getMapTimeTable(comparableId.getAgency(), comparableId.getId(), System.currentTimeMillis(), null);
+                        //return service.updateDelays(busTimetables.get(comparableId));
+                        return busTimetables.get(comparableId);
                     }
                 });
     }
 
     private static void refreshBusTimeTable() {
+        long begin = System.currentTimeMillis();
+        List<ComparableStop> tmp = new ArrayList<>();
         try {
             for (Bus bus : getBusRoutes()) {
                 if (bus != null && bus.getDirect() != null) {
-                    cacheTrentoBusTimetables.refresh(bus.getDirect().getId());
+                    busTimetables.put(bus.getDirect().getId(), service.getMapTimeTable(bus.getDirect().getId(), System.currentTimeMillis(), null));
+                    tmp.addAll(busTimetables.get(bus.getDirect().getId()).getStops());
 
                     if (bus.hasReturn()) {
-                        cacheTrentoBusTimetables.refresh(bus.getReturn().getId());
+                        busTimetables.put(bus.getReturn().getId(), service.getMapTimeTable(bus.getReturn().getId(), System.currentTimeMillis(), null));
+                        tmp.addAll(busTimetables.get(bus.getReturn().getId()).getStops());
                     }
                 }
             }
-        } catch (ExecutionException e) {
-            logger.error(e.getMessage());
+
+        } catch (Throwable e) {
+            logger.error("", e);
+        } finally {
+            stops.clear();
+            stops.addAll(tmp);
         }
+        logger.info(System.currentTimeMillis() - begin + "ms");
     }
 
     static void scheduleUpdate() {
@@ -81,6 +94,14 @@ class BusDataManagement {
     }
 
     static MapTimeTable getBusTimeTable(ComparableId comparableId) throws ExecutionException {
-        return cacheTrentoBusTimetables.get(comparableId);
+        return cacheBusTimetables.get(comparableId);
+    }
+
+    static Set<ComparableStop> getStops() {
+        return stops;
+    }
+
+    static List<MapTimeTable> getBusTimeTables() {
+        return new ArrayList<>(busTimetables.values());
     }
 }

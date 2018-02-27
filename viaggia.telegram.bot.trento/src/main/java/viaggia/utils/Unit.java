@@ -1,4 +1,4 @@
-package viaggia.command.parking.general.utils;
+package viaggia.utils;
 
 /**
  * @author Luca Mosetti
@@ -7,7 +7,7 @@ package viaggia.command.parking.general.utils;
 public enum Unit {
 
     KILOMETER(1.609344, "km"),
-    METER(1.609344 * 100, "m"),
+    METER(KILOMETER.getValue() * 100, "m"),
     NAUTICAL_MILES(0.8684, "nmi");
 
     private double value;

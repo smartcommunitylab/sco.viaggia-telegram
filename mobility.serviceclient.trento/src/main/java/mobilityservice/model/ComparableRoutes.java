@@ -29,10 +29,7 @@ public class ComparableRoutes extends ArrayList<ComparableRoute> {
     }
 
     public void putAll(List<Route> routes) {
-        for (Route r : routes) {
-            ComparableRoute cr = new ComparableRoute(r);
-            put(cr);
-        }
+        routes.stream().map(ComparableRoute::new).forEach(this::put);
     }
 
     public List<String> getLongNames() {
@@ -44,21 +41,13 @@ public class ComparableRoutes extends ArrayList<ComparableRoute> {
     }
 
     public ComparableRoute getWithLongName(String longName) {
-        for (ComparableRoute route : this) {
-            if (route.getRouteLongName().equals(longName))
-                return route;
-        }
+        return this.stream().filter(route -> route.getRouteLongName().equals(longName)).findFirst().orElse(null);
 
-        return null;
     }
 
     public ComparableRoute getWithId(ComparableId comparableId) {
-        for (ComparableRoute route : this) {
-            if (route.getId().equals(comparableId))
-                return route;
-        }
+        return this.stream().filter(route -> route.getId().equals(comparableId)).findFirst().orElse(null);
 
-        return null;
     }
 
     public ComparableRoutes subRoutesLongName(String filter) {

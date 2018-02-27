@@ -34,4 +34,8 @@ public class RouteQuery extends Query implements RouteRegex {
     public String getStopId() {
         return super.get(STOP_ID);
     }
+
+    public boolean isNewMessage() {
+        return super.get(NEW_MESSAGE) != null;
+    }
 }

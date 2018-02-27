@@ -1,23 +1,26 @@
 package viaggia.command.route.train;
 
-import gekoramy.telegram.bot.keyboard.ReplyKeyboardMarkupBuilder;
 import gekoramy.telegram.bot.model.Command;
-import mobilityservice.model.ComparableId;
-import mobilityservice.model.ComparableRoute;
-import mobilityservice.model.ComparableRoutes;
-import mobilityservice.model.MapTimeTable;
-import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
-import viaggia.command.route.AbstractRouteCommand;
+import mobilityservice.model.*;
+import org.telegram.telegrambots.api.objects.Location;
+import viaggia.command.route.AbsRouteCommand;
 import viaggia.command.route.general.utils.Mode;
 import viaggia.exception.NotHandledException;
+import viaggia.utils.Distance;
+import viaggia.utils.DistanceCalculator;
+import viaggia.utils.Unit;
 
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
  * @author Luca Mosetti
  * @since 2017
  */
-public class TrainCommand extends AbstractRouteCommand {
+public class TrainCommand extends AbsRouteCommand {
     private static final Command COMMAND_ID = new Command("train", "train_description");
 
     public TrainCommand() {
@@ -46,24 +49,32 @@ public class TrainCommand extends AbstractRouteCommand {
     }
 
     @Override
-    protected MapTimeTable getRouteTimeTable(ComparableRoute route) throws ExecutionException, NotHandledException {
-        MapTimeTable routeTT = TrainDataManagement.getTrainTimetable(route.getId());
+    protected ComparableRoutes getRoutes() throws ExecutionException {
+        return TrainDataManagement.getTrainsComparableRoutes();
+    }
+
+    @Override
+    protected MapTimeTable getRouteTimeTable(ComparableId routeId) throws ExecutionException, NotHandledException {
+        MapTimeTable routeTT = TrainDataManagement.getTrainTimetable(routeId);
         if (routeTT == null) throw new NotHandledException();
 
         return routeTT;
     }
 
     @Override
-    protected ComparableRoutes getRoutes() throws ExecutionException {
-        return TrainDataManagement.getTrainsComparableRoutes();
+    protected List<MapTimeTable> getRouteTimeTables() {
+        return TrainDataManagement.getBusTimeTables();
     }
 
     @Override
-    protected ReplyKeyboard linesKeyboard() throws ExecutionException {
-        return new ReplyKeyboardMarkupBuilder()
-                .setResizeKeyboard(true)
-                .setOneTimeKeyboard(true)
-                .addKeyboardButtons(1, (getRoutes()).getLongNames())
-                .build();
+    protected List<ComparableStop> getSortedStops(Location location) {
+        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.calculateStops(Unit.METER, location, TrainDataManagement.getStops()));
+        List<ComparableStop> closestStops = new ArrayList<>();
+
+        do {
+            closestStops.add(stops.poll().getValue());
+        } while (stops.peek().getDistance() > 500);
+
+        return closestStops;
     }
 }
