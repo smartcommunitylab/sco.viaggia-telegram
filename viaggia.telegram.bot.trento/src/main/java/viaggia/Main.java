@@ -12,7 +12,7 @@ import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
  */
 public class Main {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
         String botName = "";

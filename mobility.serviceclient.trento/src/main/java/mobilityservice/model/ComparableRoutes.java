@@ -15,12 +15,6 @@ public class ComparableRoutes extends ArrayList<ComparableRoute> {
     public ComparableRoutes() {
     }
 
-    public ComparableRoutes(List<ComparableRoute> list) {
-        for (ComparableRoute r : list) {
-            this.put(r);
-        }
-    }
-
     private void put(ComparableRoute r) {
         if (this.contains(r))
             this.set(this.indexOf(r), r);

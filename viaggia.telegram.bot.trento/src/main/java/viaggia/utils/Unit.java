@@ -10,8 +10,8 @@ public enum Unit {
     METER(KILOMETER.getValue() * 100, "m"),
     NAUTICAL_MILES(0.8684, "nmi");
 
-    private double value;
-    private String abbreviation;
+    private final double value;
+    private final String abbreviation;
 
     Unit(double value, String abbreviation) {
         this.value = value;

@@ -90,8 +90,8 @@ public class MobilityDataServiceTrento {
         return ComparableRoutes;
     }
 
-    private static void correctsBikeNames(Parkings parkings) {
-        for (Parking p : parkings) {
+    private static void correctsBikeNames(ParkingList parkingList) {
+        for (Parking p : parkingList) {
             p.setName(p.getName().replace(" - Trento", ""));
         }
     }
@@ -120,17 +120,17 @@ public class MobilityDataServiceTrento {
         return comparableRoutes;
     }
 
-    public Parkings getParkings() throws MobilityServiceException {
-        Parkings parkings = new Parkings();
-        parkings.putAll(service.getParkings(AGENCY_PARKING, null));
+    public ParkingList getParkings() throws MobilityServiceException {
+        ParkingList parkingList = new ParkingList();
+        parkingList.putAll(service.getParkings(AGENCY_PARKING, null));
 
-        parkings.sort(PARKING_COMPARATOR);
+        parkingList.sort(PARKING_COMPARATOR);
 
-        return parkings;
+        return parkingList;
     }
 
-    public Parkings getBikes() throws MobilityServiceException {
-        Parkings bikes = new Parkings();
+    public ParkingList getBikes() throws MobilityServiceException {
+        ParkingList bikes = new ParkingList();
         bikes.putAll(service.getBikeSharings(AGENCY_BIKE, null));
         correctsBikeNames(bikes);
 

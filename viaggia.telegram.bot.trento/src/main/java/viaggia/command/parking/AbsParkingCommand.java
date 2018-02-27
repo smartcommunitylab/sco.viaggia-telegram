@@ -10,7 +10,7 @@ import gekoramy.telegram.bot.responder.InlineQueryResponder;
 import gekoramy.telegram.bot.responder.MessageResponder;
 import gekoramy.telegram.bot.responder.type.CallbackQueryEditor;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
-import mobilityservice.model.Parkings;
+import mobilityservice.model.ParkingList;
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.ParseMode;
@@ -38,7 +38,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -155,51 +154,46 @@ public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
     // region SendMessage
 
     private SendMessage parkingMessage(Chat chat, int userId) {
-        try {
-            return new SendMessage()
-                    .setText(mBB.getMessage(userId, getCommand().getDescription()))
-                    .setReplyMarkup(keyboardMarkup(chat));
-        } catch (ExecutionException e) {
-            return new SendMessage()
-                    .setText("Something went wrong...");
-        }
+        return new SendMessage()
+                .setText(mBB.getMessage(userId, getCommand().getDescription()))
+                .setReplyMarkup(keyboardMarkup(chat));
     }
 
     // endregion SendMessage
 
     // region getters
 
-    protected abstract List<Parking> getParkings() throws ExecutionException;
+    protected abstract List<Parking> getParkingList();
 
-    private Parking getSimilarParking(String name) throws ExecutionException, NotHandledException {
-        Parkings parkings = new Parkings();
-        parkings.putAll(getParkings());
-        Parking parking = parkings.getSimilar(name);
-
-        if (parking == null) throw new NotHandledException();
-
-        return parking;
-    }
-
-    private Parking getParking(String name) throws ExecutionException, NotHandledException {
-        Parkings parkings = new Parkings();
-        parkings.putAll(getParkings());
-        Parking parking = parkings.get(name);
+    private Parking getSimilarParking(String name) throws NotHandledException {
+        ParkingList parkingList = new ParkingList();
+        parkingList.putAll(getParkingList());
+        Parking parking = parkingList.getSimilar(name);
 
         if (parking == null) throw new NotHandledException();
 
         return parking;
     }
 
-    private List<Parking> getParkings(String filter) throws ExecutionException {
-        Parkings p = new Parkings();
-        p.putAll(getParkings());
+    private Parking getParking(String name) throws NotHandledException {
+        ParkingList parkingList = new ParkingList();
+        parkingList.putAll(getParkingList());
+        Parking parking = parkingList.get(name);
 
-        return filter == null || filter.isEmpty() ? p : p.subParkings(filter);
+        if (parking == null) throw new NotHandledException();
+
+        return parking;
     }
 
-    private List<Distance<Parking>> getClosestParking(Location location) throws ExecutionException {
-        return DistanceCalculator.calculateParkings(unit, location, new HashSet<>(getParkings()))
+    private List<Parking> getParkingSubList(String filter) {
+        ParkingList p = new ParkingList();
+        p.putAll(getParkingList());
+
+        return filter == null || filter.isEmpty() ? p : p.parkingSubList(filter);
+    }
+
+    private List<Distance<Parking>> getClosestParking(Location location) {
+        return DistanceCalculator.parkingDistance(unit, location, new HashSet<>(getParkingList()))
                 .stream().filter(distance -> distance.getDistance() < maxDistance).collect(Collectors.toList());
     }
 
@@ -207,11 +201,11 @@ public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
 
     // region utils
 
-    private List<InlineQueryResult> results(String filter, int userId) throws ExecutionException {
-        List<Parking> subParkings = getParkings(filter);
+    private List<InlineQueryResult> results(String filter, int userId) {
+        List<Parking> parkingSubList = getParkingSubList(filter);
         List<InlineQueryResult> results = new ArrayList<>();
 
-        for (Parking p : subParkings) {
+        for (Parking p : parkingSubList) {
             results.add(
                     new InlineQueryResultVenue()
                             .setId(p.getName())
@@ -266,12 +260,12 @@ public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
 
     // region keyboard
 
-    private ReplyKeyboard keyboardMarkup(Chat chat) throws ExecutionException {
-        List<String> parkings = ((Parkings) getParkings()).getNames();
+    private ReplyKeyboard keyboardMarkup(Chat chat) {
+        List<String> parkingNames = ((ParkingList) getParkingList()).getNames();
         ReplyKeyboardMarkupBuilder builder = new ReplyKeyboardMarkupBuilder()
                 .setResizeKeyboard(true)
                 .setOneTimeKeyboard(true)
-                .addKeyboardButtons(2, parkings);
+                .addKeyboardButtons(2, parkingNames);
 
         if (chat.isUserChat())
             builder

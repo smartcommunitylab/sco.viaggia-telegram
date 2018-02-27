@@ -83,7 +83,7 @@ public class BusCommand extends AbsRouteCommand {
 
     @Override
     protected List<ComparableStop> getSortedStops(Location location) {
-        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.calculateStops(Unit.METER, location, BusDataManagement.getStops()));
+        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.stopDistance(Unit.METER, location, BusDataManagement.getStops()));
         List<ComparableStop> closestStops = new ArrayList<>();
 
         do {

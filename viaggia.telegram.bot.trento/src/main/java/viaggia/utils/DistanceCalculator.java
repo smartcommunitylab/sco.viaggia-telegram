@@ -53,7 +53,7 @@ public class DistanceCalculator {
         return (rad * 180 / Math.PI);
     }
 
-    public static List<Distance<ComparableStop>> calculateStops(Unit unit, final Location user, final Set<ComparableStop> stops) {
+    public static List<Distance<ComparableStop>> stopDistance(Unit unit, final Location user, final Set<ComparableStop> stops) {
         final List<Distance<ComparableStop>> distances = new ArrayList<>();
 
         for (final ComparableStop stop : stops) {
@@ -70,10 +70,10 @@ public class DistanceCalculator {
         return distances;
     }
 
-    public static List<Distance<Parking>> calculateParkings(Unit unit, final Location user, final Set<Parking> parkings) {
+    public static List<Distance<Parking>> parkingDistance(Unit unit, final Location user, final Set<Parking> parkingSet) {
         final List<Distance<Parking>> distances = new ArrayList<>();
 
-        for (final Parking p : parkings) {
+        for (final Parking p : parkingSet) {
             distances.add(
                     new Distance<>(
                             p,

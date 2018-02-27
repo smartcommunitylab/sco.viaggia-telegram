@@ -6,7 +6,6 @@ import viaggia.command.parking.AbsParkingCommand;
 import viaggia.utils.Unit;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author Luca Mosetti
@@ -20,7 +19,7 @@ public class BikeCommand extends AbsParkingCommand {
     }
 
     @Override
-    protected List<Parking> getParkings() throws ExecutionException {
+    protected List<Parking> getParkingList() {
         return BikeDataManagement.getBikes();
     }
 

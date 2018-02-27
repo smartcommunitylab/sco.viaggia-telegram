@@ -68,7 +68,7 @@ public class TrainCommand extends AbsRouteCommand {
 
     @Override
     protected List<ComparableStop> getSortedStops(Location location) {
-        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.calculateStops(Unit.METER, location, TrainDataManagement.getStops()));
+        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.stopDistance(Unit.METER, location, TrainDataManagement.getStops()));
         List<ComparableStop> closestStops = new ArrayList<>();
 
         do {
