@@ -455,13 +455,13 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
             // filtered ? 1st result in bold
             if (filtered) {
                 /*⇣×*/
-                if (before) text.append("⇣ ");
+                if (before) text.append("\u21E3 ");
                 text.append("*").append(stopName).append("*");
                 filtered = false;
             } else {
 
 
-                if (before) text.append("⇣ _").append(stopName).append("_");
+                if (before) text.append("\u21E3 _").append(stopName).append("_");
                 else text.append(stopName);
             }
             text.append("\n");

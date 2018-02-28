@@ -44,20 +44,20 @@ public class InlineKeyboardRowNavRouteBuilder {
 
         } else if (chosen >= xFirst && chosen <= xLast) {
             // « 0 d e f L »
-            buttons.add(entry("« " + 0, query(COMMAND_ID, id, 0, stopId)));
+            buttons.add(entry("\u00AB " + 0, query(COMMAND_ID, id, 0, stopId)));
             for (int i = chosen - between / 2; i <= chosen + between / 2; i++) {
                 buttons.add(entry(i, query(COMMAND_ID, id, i, stopId)));
             }
-            buttons.add(entry(last + " »", query(COMMAND_ID, id, last, stopId)));
+            buttons.add(entry(last + " \u00BB", query(COMMAND_ID, id, last, stopId)));
         } else if (chosen < xFirst) {
             // 0 1 2 xFirst L »
             for (int i = 0; i <= xFirst; i++) {
                 buttons.add(entry(i, query(COMMAND_ID, id, i, stopId)));
             }
-            buttons.add(entry(last + " »", query(COMMAND_ID, id, last, stopId)));
+            buttons.add(entry(last + " \u00BB", query(COMMAND_ID, id, last, stopId)));
         } else if (chosen > xLast) {
             // « 0 xLast H I L
-            buttons.add(entry("« " + 0, query(COMMAND_ID, id, 0, stopId)));
+            buttons.add(entry("\u00AB " + 0, query(COMMAND_ID, id, 0, stopId)));
             for (int i = xLast; i <= last; i++) {
                 buttons.add(entry(i, query(COMMAND_ID, id, i, stopId)));
             }
@@ -65,7 +65,7 @@ public class InlineKeyboardRowNavRouteBuilder {
 
         for (Map.Entry<String, String> entry : buttons) {
             if (entry.getKey().equals(Integer.toString(chosen))) {
-                buttons.set(buttons.indexOf(entry), new AbstractMap.SimpleEntry<>("· " + entry.getKey() + " ·", entry.getValue()));
+                buttons.set(buttons.indexOf(entry), new AbstractMap.SimpleEntry<>("\u00B7 " + entry.getKey() + " \u00B7", entry.getValue()));
                 break;
             }
         }
