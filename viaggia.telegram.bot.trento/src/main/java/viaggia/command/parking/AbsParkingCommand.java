@@ -107,16 +107,19 @@ public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
         }
     }
 
+    @Override
     public void respondCallbackQuery(CallbackQueryResponder absSender, Query query, User user, Message message) {
         parkingCallbackQueryHandling(absSender, query, user.getId());
 
     }
 
+    @Override
     public void respondCallbackQuery(InlineCallbackQueryResponder absSender, Query query, User user) {
         parkingCallbackQueryHandling(absSender, query, user.getId());
     }
 
-    public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments) {
+    @Override
+    public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments, Location location) {
         try {
             absSender.answer(new AnswerInlineQuery()
                     .setResults(results(arguments, user.getId())));

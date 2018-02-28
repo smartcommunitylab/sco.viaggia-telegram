@@ -31,10 +31,10 @@ public abstract class MapTimeTableManagement {
 
     private final Logger logger;
 
-    protected MapTimeTableManagement(boolean checkDelay, int delay) {
+    protected MapTimeTableManagement(boolean checkDelay) {
         logger = LoggerFactory.getLogger(getClass());
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
-                this::refreshTimeTable, delay, 1, TimeUnit.HOURS
+                this::refreshTimeTable, 0, 1, TimeUnit.HOURS
         );
 
         cacheTimetables = CacheBuilder.newBuilder()

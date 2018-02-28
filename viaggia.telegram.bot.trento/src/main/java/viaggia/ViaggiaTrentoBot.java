@@ -28,7 +28,7 @@ import javax.ws.rs.core.Response;
 class ViaggiaTrentoBot extends UseCaseBot implements ChatbaseHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ViaggiaTrentoBot.class);
-    private static final ChatbaseMonitor monitor = new ChatbaseMonitor("2.2");
+    private static final ChatbaseMonitor monitor = new ChatbaseMonitor("2.3");
 
     /**
      * Here should be registered all the UseCaseCommand

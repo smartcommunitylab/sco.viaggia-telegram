@@ -171,7 +171,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
                         .setText(msg.getKey())
                         .setReplyMarkup(msg.getValue()));
             } else {
-                if ((q.getValue().equals(HOURS) || q.getValue().equals(FILTER)) && equalsFormattedTexts(msg.getKey(), message.getText(), ParseMode.MARKDOWN))
+                if ((q.getValue().equals(HOURS) || q.getValue().equals(FILTER)) && absSender.equalsFormattedTexts(msg.getKey(), message.getText(), ParseMode.MARKDOWN))
                     absSender.send(new EditMessageReplyMarkup()
                             .setReplyMarkup(msg.getValue()));
                 else
@@ -211,7 +211,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
     }
 
     @Override
-    public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments) {
+    public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments, Location location) {
         try {
             List<Pair<ComparableRoute, MapTimeTable>> timeTables = new ArrayList<>();
             for (ComparableRoute route : getRoutes(arguments)) {

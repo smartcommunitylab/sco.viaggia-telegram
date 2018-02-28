@@ -43,7 +43,7 @@ class TrainDataManagement extends MapTimeTableManagement {
     }
 
     TrainDataManagement() {
-        super(true, 20);
+        super(true);
     }
 
     ComparableRoutes getTrainsComparableRoutes() throws ExecutionException {

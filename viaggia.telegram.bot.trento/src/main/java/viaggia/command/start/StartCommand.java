@@ -12,6 +12,7 @@ import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.ParseMode;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.Chat;
+import org.telegram.telegrambots.api.objects.Location;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -93,7 +94,7 @@ public class StartCommand extends DistinguishedUseCaseCommand {
     }
 
     @Override
-    public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments) {
+    public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments, Location location) {
         absSender.answer(new AnswerInlineQuery()
                 .setResults(new ArrayList<>())
                 .setSwitchPmParameter(SWITCH_HELPER)

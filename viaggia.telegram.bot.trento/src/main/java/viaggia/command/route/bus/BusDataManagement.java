@@ -41,7 +41,7 @@ class BusDataManagement extends MapTimeTableManagement {
     }
 
     BusDataManagement() {
-        super(false, 0);
+        super(false);
     }
 
     Buses getBusRoutes() throws ExecutionException {
