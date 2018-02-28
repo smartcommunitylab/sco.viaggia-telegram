@@ -3,6 +3,7 @@ package viaggia.command.route.general.utils;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import eu.trentorise.smartcampus.mobilityservice.MobilityServiceException;
 import mobilityservice.model.ComparableId;
 import mobilityservice.model.ComparableRoute;
 import mobilityservice.model.ComparableStop;
@@ -30,47 +31,56 @@ public abstract class MapTimeTableManagement {
 
     private final Logger logger;
 
-    protected MapTimeTableManagement(boolean checkDelay) {
+    protected MapTimeTableManagement(boolean checkDelay, int delay) {
         logger = LoggerFactory.getLogger(getClass());
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(
-                this::refreshTimeTable, 0, 1, TimeUnit.HOURS
+                this::refreshTimeTable, delay, 1, TimeUnit.HOURS
         );
 
         cacheTimetables = CacheBuilder.newBuilder()
                 .expireAfterWrite(5, TimeUnit.MINUTES)
-                .build(checkDelay ? new CacheLoader<ComparableId, MapTimeTable>() {
-                    @Override
-                    public MapTimeTable load(ComparableId comparableId) throws Exception {
-                        return service.updateDelays(futureTimetables.get(comparableId));
-                    }
-                } : new CacheLoader<ComparableId, MapTimeTable>() {
-                    @Override
-                    public MapTimeTable load(ComparableId comparableId) throws Exception {
-                        return futureTimetables.get(comparableId);
-                    }
-                });
+                .build(checkDelay ?
+                        new CacheLoader<ComparableId, MapTimeTable>() {
+                            @Override
+                            public MapTimeTable load(ComparableId comparableId) throws Exception {
+                                return service.updateDelays(futureTimetables.get(comparableId));
+                            }
+                        } :
+                        new CacheLoader<ComparableId, MapTimeTable>() {
+                            @Override
+                            public MapTimeTable load(ComparableId comparableId) throws Exception {
+                                return futureTimetables.get(comparableId);
+                            }
+                        }
+                );
     }
 
     private void refreshTimeTable() {
         logger.info("starting...");
         long begin = System.currentTimeMillis();
-        ExecutorService pool = Executors.newCachedThreadPool();
+        List<CompletableFuture> futures = new ArrayList<>();
 
         try {
-            getRoutes().forEach(route -> pool.submit(() -> futureTimetables.put(
-                    route.getId(),
-                    service.getMapTimeTable(route.getId(), System.currentTimeMillis(), null)
-                    ))
-            );
+            getRoutes().forEach(route -> futures.add(CompletableFuture.runAsync(() -> {
+                try {
+                    futureTimetables.put(
+                            route.getId(),
+                            service.getMapTimeTable(route.getId(), System.currentTimeMillis(), null)
+                    );
+                } catch (MobilityServiceException e) {
+                    logger.error(e.getMessage(), e);
+                }
+            })));
         } catch (ExecutionException e) {
             logger.error(e.getMessage(), e);
         }
 
-        updateStops();
+        CompletableFuture
+                .allOf(futures.toArray(new CompletableFuture[futures.size()]))
+                .thenRun(this::updateStops)
+                .join();
 
         logger.info(System.currentTimeMillis() - begin + "ms");
-        pool.shutdown();
-
     }
 
     private void updateStops() {
