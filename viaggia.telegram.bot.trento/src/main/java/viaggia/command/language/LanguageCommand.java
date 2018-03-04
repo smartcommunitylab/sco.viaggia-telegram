@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class LanguageCommand extends DistinguishedUseCaseCommand {
     private final static Command COMMAND_ID = new Command("language", "language_description");
-    private final static Locale[] languages = {Locale.ITALY, Locale.US, Locale.FRANCE};
+    private final static Locale[] languages = {Locale.ITALY, Locale.US, Locale.FRANCE, Locale.GERMANY};
 
     public LanguageCommand() {
         super(COMMAND_ID);
@@ -91,7 +91,7 @@ public class LanguageCommand extends DistinguishedUseCaseCommand {
         }
 
         return new InlineKeyboardMarkupBuilder()
-                .addSeparateRowsKeyboardButtons(3, buttons)
+                .addSeparateRowsKeyboardButtons(2, buttons)
                 .build();
     }
 }
