@@ -9,7 +9,6 @@ import gekoramy.telegram.bot.responder.CallbackQueryResponder;
 import gekoramy.telegram.bot.responder.InlineCallbackQueryResponder;
 import gekoramy.telegram.bot.responder.InlineQueryResponder;
 import gekoramy.telegram.bot.responder.MessageResponder;
-import javafx.util.Pair;
 import mobilityservice.model.*;
 import mobilityservice.utils.AlphanumComparator;
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
@@ -163,7 +162,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
     public void respondCallbackQuery(CallbackQueryResponder absSender, Query query, User user, Message message) {
         try {
             RouteQuery q = RouteQueryParser.parse(query);
-            Pair<String, InlineKeyboardMarkup> msg = getMessage(q, user.getId());
+            Map.Entry<String, InlineKeyboardMarkup> msg = getMessage(q, user.getId());
 
             if (q.isNewMessage()) {
                 absSender.send(new SendMessage()
@@ -194,7 +193,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
     public void respondCallbackQuery(InlineCallbackQueryResponder absSender, Query query, User user) {
         try {
             RouteQuery q = RouteQueryParser.parse(query);
-            Pair<String, InlineKeyboardMarkup> msg = getMessage(q, user.getId());
+            Map.Entry<String, InlineKeyboardMarkup> msg = getMessage(q, user.getId());
 
             absSender.send(new EditMessageText()
                     .setParseMode(ParseMode.MARKDOWN)
@@ -213,9 +212,9 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
     @Override
     public void respondInlineQuery(InlineQueryResponder absSender, User user, String arguments, Location location) {
         try {
-            List<Pair<ComparableRoute, MapTimeTable>> timeTables = new ArrayList<>();
+            List<Map.Entry<ComparableRoute, MapTimeTable>> timeTables = new ArrayList<>();
             for (ComparableRoute route : getRoutes(arguments)) {
-                timeTables.add(new Pair<>(route, getRouteTimeTable(route.getId())));
+                timeTables.add(new AbstractMap.SimpleEntry<>(route, getRouteTimeTable(route.getId())));
             }
 
             absSender.answer(new AnswerInlineQuery()
@@ -236,7 +235,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
         }
     }
 
-    private Pair<String, InlineKeyboardMarkup> getMessage(RouteQuery q, int userId) throws ExecutionException, NotHandledException {
+    private Map.Entry<String, InlineKeyboardMarkup> getMessage(RouteQuery q, int userId) throws ExecutionException, NotHandledException {
         ComparableRoute route = getRoute(q.getId());
         MapTimeTable routeTT = getRouteTimeTable(route.getId(), q.getStopId());
 
@@ -281,7 +280,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
                 break;
         }
 
-        return new Pair<>(text, markup);
+        return new AbstractMap.SimpleEntry<>(text, markup);
     }
 
     // region getters
@@ -354,10 +353,10 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
         return map.get(map.size() - 1).getValue();
     }
 
-    private List<InlineQueryResult> results(int userId, List<Pair<ComparableRoute, MapTimeTable>> timeTables) throws ExecutionException, NotHandledException {
+    private List<InlineQueryResult> results(int userId, List<Map.Entry<ComparableRoute, MapTimeTable>> timeTables) throws ExecutionException, NotHandledException {
         List<InlineQueryResult> results = new ArrayList<>();
 
-        for (Pair<ComparableRoute, MapTimeTable> e : timeTables) {
+        for (Map.Entry<ComparableRoute, MapTimeTable> e : timeTables) {
             ComparableRoute route = e.getKey();
             MapTimeTable timeTable = e.getValue();
 
@@ -443,7 +442,7 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
                     .append("` ")
                     .append(mBB.getMessage(userId, "delay"))
                     .append("\n");
-            now = now.minusMinutes(delay.getSeconds());
+            now = now.minusSeconds(delay.getSeconds());
         }
 
         for (Map.Entry<String, LocalTime> stopTime : times) {
@@ -459,8 +458,6 @@ public abstract class AbsRouteCommand extends DistinguishedUseCaseCommand {
                 text.append("*").append(stopName).append("*");
                 filtered = false;
             } else {
-
-
                 if (before) text.append("\u21E3 _").append(stopName).append("_");
                 else text.append(stopName);
             }

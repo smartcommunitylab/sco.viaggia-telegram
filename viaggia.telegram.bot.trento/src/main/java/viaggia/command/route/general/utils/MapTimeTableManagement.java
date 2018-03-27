@@ -48,7 +48,7 @@ public abstract class MapTimeTableManagement {
                         } :
                         new CacheLoader<ComparableId, MapTimeTable>() {
                             @Override
-                            public MapTimeTable load(ComparableId comparableId) throws Exception {
+                            public MapTimeTable load(ComparableId comparableId) {
                                 return futureTimetables.get(comparableId);
                             }
                         }
