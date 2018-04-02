@@ -16,7 +16,7 @@ import org.telegram.telegrambots.api.methods.AnswerInlineQuery;
 import org.telegram.telegrambots.api.methods.ParseMode;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.send.SendVenue;
-import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.api.objects.Chat;
 import org.telegram.telegrambots.api.objects.Location;
 import org.telegram.telegrambots.api.objects.Message;
@@ -110,7 +110,6 @@ public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
     @Override
     public void respondCallbackQuery(CallbackQueryResponder absSender, Query query, User user, Message message) {
         parkingCallbackQueryHandling(absSender, query, user.getId());
-
     }
 
     @Override
@@ -137,7 +136,7 @@ public abstract class AbsParkingCommand extends DistinguishedUseCaseCommand {
             answer.setText(parking.getName());
             answer.setCacheTime(30);
 
-            EditMessageText edit = new EditMessageText();
+            EditMessageReplyMarkup edit = new EditMessageReplyMarkup();
             edit.setReplyMarkup(inlineKeyboardMarkup(parking, userId));
 
             if (Integer.parseInt(q.getValue()) != available(parking)) {
