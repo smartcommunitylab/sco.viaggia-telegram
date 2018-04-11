@@ -1,16 +1,17 @@
 package viaggia.command.parking.general.query;
 
-import bot.model.query.Query;
+import gekoramy.telegram.bot.model.query.Query;
 
 /**
- * Created by Luca Mosetti in 2017
- * <p>
  * ParkingQueryParser for ParkingCommand in general
  * (Bike and ParkingCommand information)
+ *
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class ParkingQueryParser {
 
-    public ParkingQuery parse(Query query) {
+    public static ParkingQuery parse(Query query) {
         return new ParkingQuery(query.getMap());
     }
 }

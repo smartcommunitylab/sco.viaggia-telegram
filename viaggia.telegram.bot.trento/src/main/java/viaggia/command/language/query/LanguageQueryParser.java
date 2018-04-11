@@ -1,9 +1,10 @@
 package viaggia.command.language.query;
 
-import bot.model.query.Query;
+import gekoramy.telegram.bot.model.query.Query;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class LanguageQueryParser {
 

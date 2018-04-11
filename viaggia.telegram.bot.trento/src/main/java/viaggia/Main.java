@@ -7,19 +7,22 @@ import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
-public class Main {
+class Main {
 
-    private static Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
         String botName = "";
         String botToken = "";
+        String chatbaseToken = "";
 
-        if (args != null && args.length == 2) {
+        if (args != null && args.length == 3) {
             botName = args[0].trim();
             botToken = args[1].trim();
+            chatbaseToken = args[2].trim();
         }
 
         // register the bot
@@ -28,9 +31,9 @@ public class Main {
         TelegramBotsApi botsApi = new TelegramBotsApi();
 
         try {
-            botsApi.registerBot(new ViaggiaTrentoBot(botName, botToken));
+            botsApi.registerBot(new ViaggiaTrentoBot(botName, botToken, chatbaseToken));
         } catch (TelegramApiRequestException e) {
-            logger.error(e.getMessage());
+            logger.error(e.getMessage(), e);
         }
     }
 }

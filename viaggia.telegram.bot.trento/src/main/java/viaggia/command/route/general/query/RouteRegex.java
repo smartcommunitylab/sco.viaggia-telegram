@@ -1,7 +1,8 @@
 package viaggia.command.route.general.query;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 interface RouteRegex {
 
@@ -9,4 +10,5 @@ interface RouteRegex {
     String AGENCY = "AG";
     String VALUE = "VAL";
     String STOP_ID = "SD";
+    String NEW_MESSAGE = "NM";
 }

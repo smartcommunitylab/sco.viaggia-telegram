@@ -1,8 +1,8 @@
 package viaggia.extended;
 
-import bot.CommandRegistry;
-import bot.model.Command;
-import bot.model.UseCaseCommand;
+import gekoramy.telegram.bot.CommandRegistry;
+import gekoramy.telegram.bot.model.Command;
+import gekoramy.telegram.bot.model.UseCaseCommand;
 import viaggia.utils.MessageBundleBuilder;
 
 import java.util.ArrayList;
@@ -11,21 +11,20 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Created by Luca Mosetti
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class CommandRegistryUtils {
 
     private final CommandRegistry commandRegistry;
-    private List<Command> commands;
-    private List<Command> tmp;
 
     public CommandRegistryUtils(CommandRegistry commandRegistry) {
         this.commandRegistry = commandRegistry;
     }
 
-    public String getHelpMessage(MessageBundleBuilder mBB) {
-        commands = new ArrayList<>();
-        tmp = new ArrayList<>();
+    public String getHelpMessage(MessageBundleBuilder mBB, int userId) {
+        List<Command> commands = new ArrayList<>();
+        List<Command> tmp = new ArrayList<>();
 
         commands.add(new Command("start", "start_description"));
         commands.add(new Command("help", "help_description"));
@@ -47,7 +46,7 @@ public class CommandRegistryUtils {
                     .append('/')
                     .append(cmd.getCommandIdentifier())
                     .append("\n")
-                    .append(mBB.getMessage(cmd.getDescription()))
+                    .append(mBB.getMessage(userId, cmd.getDescription()))
                     .append("\n\n");
         }
 

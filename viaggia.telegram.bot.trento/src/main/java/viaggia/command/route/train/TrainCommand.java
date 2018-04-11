@@ -1,27 +1,28 @@
 package viaggia.command.route.train;
 
-import bot.exception.EmptyKeyboardException;
-import bot.keyboard.ReplyKeyboardMarkupBuilder;
-import bot.model.Command;
-import mobilityservice.model.ComparableId;
-import mobilityservice.model.ComparableRoute;
-import mobilityservice.model.ComparableRoutes;
-import mobilityservice.model.MapTimeTable;
-import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
-import viaggia.command.route.AbstractRouteCommand;
+import gekoramy.telegram.bot.model.Command;
+import mobilityservice.model.*;
+import org.telegram.telegrambots.api.objects.Location;
+import viaggia.command.route.AbsRouteCommand;
 import viaggia.command.route.general.utils.Mode;
-import viaggia.exception.IncorrectValueException;
+import viaggia.exception.NotHandledException;
+import viaggia.utils.Distance;
+import viaggia.utils.DistanceCalculator;
+import viaggia.utils.Unit;
 
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
-public class TrainCommand extends AbstractRouteCommand {
-
+public class TrainCommand extends AbsRouteCommand {
     private static final Command COMMAND_ID = new Command("train", "train_description");
-
-    private final ReplyKeyboardMarkupBuilder replyKeyboardMarkupBuilder = new ReplyKeyboardMarkupBuilder();
+    private final TrainDataManagement data = new TrainDataManagement();
 
     public TrainCommand() {
         super(COMMAND_ID, Mode.LONG_NAME);
@@ -29,50 +30,52 @@ public class TrainCommand extends AbstractRouteCommand {
 
     @Override
     public void init() {
-        TrainDataManagement.scheduleUpdate();
     }
 
-    /**
-     * @param arguments route.getLongName
-     * @return
-     * @throws ExecutionException
-     * @throws IncorrectValueException
-     */
     @Override
-    protected ComparableRoute getRoute(String arguments) throws ExecutionException, IncorrectValueException {
-        ComparableRoute route = TrainDataManagement.getTrainsComparableRoutes().getWithLongName(arguments);
-        if (route == null) throw new IncorrectValueException();
+    protected ComparableRoute getRoute(String arguments) throws ExecutionException, NotHandledException {
+        ComparableRoute route = data.getTrainsComparableRoutes().getWithLongName(arguments);
+        if (route == null) throw new NotHandledException();
 
         return route;
     }
 
     @Override
-    protected ComparableRoute getRoute(ComparableId id) throws ExecutionException, IncorrectValueException {
-        ComparableRoute route = TrainDataManagement.getTrainsComparableRoutes().getWithId(id);
-        if (route == null) throw new IncorrectValueException();
+    protected ComparableRoute getRoute(ComparableId id) throws ExecutionException, NotHandledException {
+        ComparableRoute route = data.getTrainsComparableRoutes().getWithId(id);
+        if (route == null) throw new NotHandledException();
 
         return route;
     }
 
     @Override
-    protected MapTimeTable getRouteTimeTable(ComparableRoute route) throws ExecutionException, IncorrectValueException {
-        MapTimeTable routeTT = TrainDataManagement.getTrainTimetable(route.getId());
-        if (routeTT == null) throw new IncorrectValueException();
+    protected ComparableRoutes getRoutes() throws ExecutionException {
+        return data.getTrainsComparableRoutes();
+    }
+
+    @Override
+    protected MapTimeTable getRouteTimeTable(ComparableId routeId) throws ExecutionException, NotHandledException {
+        MapTimeTable routeTT = data.getTimeTable(routeId);
+        if (routeTT == null) throw new NotHandledException();
 
         return routeTT;
     }
 
     @Override
-    protected ComparableRoutes getRoutes() throws ExecutionException {
-        return TrainDataManagement.getTrainsComparableRoutes();
+    protected List<MapTimeTable> getRouteTimeTables() {
+        return data.getTimeTables();
     }
 
     @Override
-    protected ReplyKeyboard linesKeyboard() throws EmptyKeyboardException, ExecutionException {
-        return replyKeyboardMarkupBuilder
-                .setResizeKeyboard(true)
-                .setOneTimeKeyboard(true)
-                .addKeyboardButtons(1, (getRoutes()).getLongNames())
-                .build(true);
+    protected List<ComparableStop> getSortedStops(Location location) {
+        Deque<Distance<ComparableStop>> stops = new LinkedList<>(DistanceCalculator.stopDistance(Unit.KILOMETER, location, data.getStops()));
+        List<ComparableStop> closestStops = new ArrayList<>();
+
+        if (!stops.isEmpty()) {
+            do closestStops.add(stops.poll().getValue());
+            while (stops.peek() != null && stops.peek().getDistance() < 1);
+        }
+
+        return closestStops;
     }
 }

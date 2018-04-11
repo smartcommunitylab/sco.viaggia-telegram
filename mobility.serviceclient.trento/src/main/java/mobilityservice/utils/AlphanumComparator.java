@@ -4,9 +4,7 @@ import java.util.Comparator;
 
 /**
  * This is an updated version with enhancements made by Daniel Migowski,
- * Andre Bogus, and David Koelle
- * <p>
- * Edited by Luca Mosetti
+ * Andre Bogus, and David Koelle and Luca Mosetti
  * <p>
  * To convert to use Templates (Java 1.5+):
  * - Change "implements Comparator" to "implements Comparator<String>"
@@ -66,7 +64,7 @@ public abstract class AlphanumComparator<T> implements Comparator<T> {
             thatMarker += thatChunk.length();
 
             // If both chunks contain numeric characters, sort them numerically
-            int result = 0;
+            int result;
             if (isDigit(thisChunk.charAt(0)) && isDigit(thatChunk.charAt(0))) {
                 // Simple chunk comparison by length.
                 int thisChunkLength = thisChunk.length();

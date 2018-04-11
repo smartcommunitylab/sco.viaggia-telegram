@@ -5,120 +5,127 @@ import eu.trentorise.smartcampus.mobilityservice.model.TimeTable;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.IntStream;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 02/2018
  */
 public class MapTimeTable {
 
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final int MAX_STOPS_FILTERED = 5;
 
-    private final List<String> tripIds;
-    private final List<String> stops;
-    private final List<String> stopsId;
-    private final List<List<LocalTime>> times;
-    private final List<Delay> delays;
+    private final ComparableId routeId;
+    private final List<Trip> trips;
+    private final LinkedHashMap<String, ComparableStop> stopsMap;
+    private final Map<String, List<Map.Entry<String, LocalTime>>> times;
 
-    public MapTimeTable(TimeTable timeTable) {
-        this.tripIds = timeTable.getTripIds();
-        this.stops = timeTable.getStops();
-        this.stopsId = timeTable.getStopsId();
-        this.times = new ArrayList<>(timeTable.getTimes().size());
-        this.delays = timeTable.getDelays();
-
-        for (List<String> strings : timeTable.getTimes()) {
-            LocalTime[] tmp = new LocalTime[stops.size()];
-
-            if (fillArray(tmp, strings))
-                this.times.add(Arrays.asList(tmp));
-        }
+    private MapTimeTable(MapTimeTable m) {
+        this.routeId = m.routeId;
+        this.trips = new ArrayList<>();
+        this.stopsMap = m.stopsMap;
+        this.times = new HashMap<>();
     }
 
-    private boolean fillArray(LocalTime[] times, List<String> strings) {
-        int notNull = 0;
+    public MapTimeTable(ComparableId routeId, List<ComparableStop> stops, TimeTable timeTable) {
+        this.routeId = routeId;
+        this.stopsMap = new LinkedHashMap<>();
+        stops.forEach(stop -> this.stopsMap.put(stop.getId(), stop));
+        this.trips = new ArrayList<>();
+        this.times = new HashMap<>();
 
-        LocalTime pre = LocalTime.MIN;
+        List<String> actualStops = new ArrayList<>();
 
-        for (int i = 0, length = times.length < strings.size() ? times.length : strings.size(); i < length; i++) {
-            String string = strings.get(i);
-            if (string.isEmpty()) {
-                times[i] = null;
-            } else {
-                times[i] = LocalTime.parse(string, TIME_FORMATTER);
-                if (pre.isAfter(times[i])) times[i] = pre;
+        if (timeTable != null) {
+            for (int i = 0, size = timeTable.getTripIds().size(); i < size; i++) {
+                trips.add(i, new Trip(timeTable.getTripIds().get(i), timeTable.getDelays().get(i)));
+            }
 
-                pre = times[i];
-                notNull++;
+            for (int t = 0; t < trips.size(); t++) {
+                String tripId = trips.get(t).getTripId();
+                times.put(tripId, new ArrayList<>());
+
+                for (int i = 0, size = timeTable.getStopsId().size(); i < size; i++) {
+                    String stopId = timeTable.getStopsId().get(i);
+                    LocalTime tmp = tryParse(timeTable.getTimes().get(t), i);
+
+                    if (tmp != null) {
+                        if (this.stopsMap.containsKey(stopId)) actualStops.add(stopId);
+                        else stopId = timeTable.getStops().get(i);
+                        times.get(tripId).add(new AbstractMap.SimpleEntry<>(stopId, tmp));
+                    }
+                }
+
+                if (times.get(tripId).size() < 2) {
+                    times.remove(trips.get(t).getTripId());
+                    trips.remove(t);
+                }
             }
         }
 
-        return notNull >= 2;
+        for (String stopID : actualStops) {
+            if (!this.stopsMap.containsKey(stopID))
+                System.out.println(routeId.getId() + " : " + stopID);
+        }
+
+        this.stopsMap.keySet().retainAll(actualStops);
     }
 
-    private MapTimeTable(MapTimeTable mapTimeTable) {
-        this.tripIds = mapTimeTable.tripIds;
-        this.stops = mapTimeTable.stops;
-        this.stopsId = mapTimeTable.stopsId;
-        this.times = new ArrayList<>();
-        this.delays = mapTimeTable.delays;
+    private LocalTime tryParse(List<String> strings, int i) {
+        try {
+            return LocalTime.parse(strings.get(i), TIME_FORMATTER);
+        } catch (Throwable e) {
+            return null;
+        }
     }
 
-    public List<String> getTripIds() {
-        return tripIds;
+    private List<Map.Entry<String, LocalTime>> filtered(List<Map.Entry<String, LocalTime>> entries, int fromIndex) {
+        return entries.subList(fromIndex, fromIndex + MAX_STOPS_FILTERED > entries.size() ? entries.size() : fromIndex + MAX_STOPS_FILTERED);
     }
 
-    public List<String> getStops() {
-        return stops;
+    public ComparableId getRouteId() {
+        return routeId;
     }
 
-    public List<String> getStopsId() {
-        return stopsId;
+    public List<Trip> getTrips() {
+        return trips;
     }
 
-    public List<List<LocalTime>> getTimes() {
+    public Collection<ComparableStop> getStops() {
+        return stopsMap.values();
+    }
+
+    public ComparableStop getStop(String stopId) {
+        if (!stopsMap.containsKey(stopId)) return new ComparableStop(stopId);
+        return stopsMap.get(stopId);
+    }
+
+    public Map<String, List<Map.Entry<String, LocalTime>>> getTimes() {
         return times;
-    }
-
-    public List<Delay> getDelays() {
-        return delays;
     }
 
     public MapTimeTable subMapTimeTable(String stopId) {
         MapTimeTable clone = new MapTimeTable(this);
+        int stopIndex;
 
-        int stopIndex = clone.getStopsId().indexOf(stopId);
+        for (Trip trip : this.trips) {
+            List<Map.Entry<String, LocalTime>> times = this.getTimes().get(trip.getTripId());
 
-        if (stopIndex < 0 || stopIndex > stops.size())
-            return this;
-
-        for (List<LocalTime> time : this.times) {
-            if (time.get(stopIndex) != null) {
-                clone.getTimes().add(subListFrom(time, stopIndex, MAX_STOPS_FILTERED));
+            if ((stopIndex = IntStream.range(0, times.size()).filter(i -> times.get(i).getKey().equals(stopId)).findFirst().orElse(-1)) != -1) {
+                clone.getTrips().add(trip);
+                clone.getTimes().put(trip.getTripId(), filtered(times, stopIndex));
             }
         }
 
         return clone;
     }
 
-    private List<LocalTime> subListFrom(List<LocalTime> list, int begin, int max) {
-        int tmp = 0;
-        List<LocalTime> result = new ArrayList<>();
-
-        for (int i = 0; i < list.size(); i++) {
-            result.add(null);
+    public void updateDelays(List<Delay> delays) {
+        int size = this.getTrips().size() < delays.size() ? this.getTrips().size() : delays.size();
+        for (int i = 0; i < size; i++) {
+            trips.get(i).setDelay(delays.get(i));
         }
-
-        for (int i = begin; i < list.size() && tmp < max; i++) {
-            if (list.get(i) != null) {
-                result.set(i, list.get(i));
-                tmp++;
-            }
-        }
-
-        return result;
     }
 }

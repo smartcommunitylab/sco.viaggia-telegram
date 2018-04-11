@@ -3,13 +3,15 @@ package mobilityservice.model;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Parking;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
-public class Parkings extends ArrayList<Parking> {
+public class ParkingList extends ArrayList<Parking> {
 
     public Parking getSimilar(String name) {
         for (Parking p : this) {
@@ -29,8 +31,8 @@ public class Parkings extends ArrayList<Parking> {
         return null;
     }
 
-    public void putAll(List<Parking> parkings) {
-        for (Parking p : parkings) {
+    public void putAll(Collection<Parking> parkingCollection) {
+        for (Parking p : parkingCollection) {
             if (this.contains(p))
                 this.set(this.indexOf(p), p);
             else
@@ -42,7 +44,7 @@ public class Parkings extends ArrayList<Parking> {
         return this.stream().map(Parking::getName).collect(Collectors.toList());
     }
 
-    public List<Parking> subParkings(String filter) {
+    public List<Parking> parkingSubList(String filter) {
         return this.stream().filter(p -> p.getName().toLowerCase().contains(filter)).collect(Collectors.toList());
     }
 }

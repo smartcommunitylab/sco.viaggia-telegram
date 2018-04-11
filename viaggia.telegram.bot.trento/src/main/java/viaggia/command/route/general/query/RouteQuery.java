@@ -1,21 +1,22 @@
 package viaggia.command.route.general.query;
 
-import bot.model.query.Query;
+import gekoramy.telegram.bot.model.query.Query;
 import mobilityservice.model.ComparableId;
 
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti in 2017
- * <p>
  * Query for Routes in general
  * (Bus and Train information)
+ *
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class RouteQuery extends Query implements RouteRegex {
 
     private final ComparableId id;
 
-    RouteQuery(Map map) {
+    RouteQuery(Map<String, String> map) {
         super(map);
 
         // compatibility
@@ -32,5 +33,9 @@ public class RouteQuery extends Query implements RouteRegex {
 
     public String getStopId() {
         return super.get(STOP_ID);
+    }
+
+    public boolean isNewMessage() {
+        return super.get(NEW_MESSAGE) != null;
     }
 }

@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class MobilityDataServiceTrento {
 
@@ -45,9 +46,9 @@ public class MobilityDataServiceTrento {
         }
     };
 
-    private static final AlphanumComparator<Parking> PARKING_COMPARATOR = new AlphanumComparator<Parking>() {
+    private static final AlphanumComparator<it.sayservice.platform.smartplanner.data.message.otpbeans.Parking> PARKING_COMPARATOR = new AlphanumComparator<it.sayservice.platform.smartplanner.data.message.otpbeans.Parking>() {
         @Override
-        public int compare(Parking o1, Parking o2) {
+        public int compare(it.sayservice.platform.smartplanner.data.message.otpbeans.Parking o1, it.sayservice.platform.smartplanner.data.message.otpbeans.Parking o2) {
             return compareString(o1.getName(), o2.getName());
         }
     };
@@ -89,9 +90,9 @@ public class MobilityDataServiceTrento {
         return ComparableRoutes;
     }
 
-    private static void correctsBikeNames(Parkings parkings) {
-        for (Parking p : parkings) {
-            parkings.get(parkings.indexOf(p)).setName(p.getName().replace(" - Trento", ""));
+    private static void correctsBikeNames(ParkingList parkingList) {
+        for (Parking p : parkingList) {
+            p.setName(p.getName().replace(" - Trento", ""));
         }
     }
 
@@ -119,17 +120,17 @@ public class MobilityDataServiceTrento {
         return comparableRoutes;
     }
 
-    public Parkings getParkings() throws MobilityServiceException {
-        Parkings parkings = new Parkings();
-        parkings.putAll(service.getParkings(AGENCY_PARKING, null));
+    public ParkingList getParkings() throws MobilityServiceException {
+        ParkingList parkingList = new ParkingList();
+        parkingList.putAll(service.getParkings(AGENCY_PARKING, null));
 
-        parkings.sort(PARKING_COMPARATOR);
+        parkingList.sort(PARKING_COMPARATOR);
 
-        return parkings;
+        return parkingList;
     }
 
-    public Parkings getBikes() throws MobilityServiceException {
-        Parkings bikes = new Parkings();
+    public ParkingList getBikes() throws MobilityServiceException {
+        ParkingList bikes = new ParkingList();
         bikes.putAll(service.getBikeSharings(AGENCY_BIKE, null));
         correctsBikeNames(bikes);
 

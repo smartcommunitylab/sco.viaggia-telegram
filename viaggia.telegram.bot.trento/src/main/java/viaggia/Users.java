@@ -9,12 +9,13 @@ import org.bson.Document;
 import java.util.Locale;
 
 /**
- * Created by Luca Mosetti in 2017
- * <p>
  * When a new conversation with this bot is started
  * there're saved some information about the User (Not the Chat!)
  * <p>
  * The language preference
+ *
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class Users {
 

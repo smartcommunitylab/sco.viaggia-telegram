@@ -3,9 +3,10 @@ package mobilityservice.singleton;
 import eu.trentorise.smartcampus.mobilityservice.MobilityDataService;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
-public class MobilityDataServiceSingleton {
+class MobilityDataServiceSingleton {
 
     private static final String SERVER_URL = "https://tn.smartcommunitylab.it/core.mobility";
     private static MobilityDataService instance;

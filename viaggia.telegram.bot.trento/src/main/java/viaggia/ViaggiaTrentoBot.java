@@ -1,8 +1,9 @@
 package viaggia;
 
-import bot.BotHandler;
-import bot.CommandRegistry;
-import bot.exception.TwoCommandException;
+import gekoramy.chatbase.ChatbaseHandler;
+import gekoramy.telegram.bot.CommandRegistry;
+import gekoramy.telegram.bot.UseCaseBot;
+import gekoramy.telegram.bot.exception.TwoCommandException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
@@ -17,21 +18,29 @@ import viaggia.command.route.bus.BusCommand;
 import viaggia.command.route.train.TrainCommand;
 import viaggia.command.start.StartCommand;
 
-/**
- * Created by Luca Mosetti in 2017
- */
-public class ViaggiaTrentoBot extends BotHandler {
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.Response;
 
-    private static Logger logger = LoggerFactory.getLogger(ViaggiaTrentoBot.class);
+/**
+ * @author Luca Mosetti
+ * @since 2017
+ */
+class ViaggiaTrentoBot extends UseCaseBot implements ChatbaseHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(ViaggiaTrentoBot.class);
+    private static final ChatbaseMonitor monitor = new ChatbaseMonitor("2.3");
 
     /**
      * Here should be registered all the UseCaseCommand
      *
-     * @param botName botName
+     * @param botName  botName
      * @param botToken botToken
      */
-    public ViaggiaTrentoBot(String botName, String botToken) {
-        super(botName, botToken, 15);
+    public ViaggiaTrentoBot(String botName, String botToken, String chatbaseToken) {
+        super(botName, botToken, 15, monitor);
+
+        monitor.setChatbaseHandler(this);
+        monitor.setApiKey(chatbaseToken);
 
         try {
             CommandRegistry cr = getCommandRegistry();
@@ -47,11 +56,11 @@ public class ViaggiaTrentoBot extends BotHandler {
             cr.register(new ParkingCommand());
             cr.register(new TrainCommand());
             cr.register(new LanguageCommand());
-            cr.setDefaultCmd(help);
-            cr.setDefaultInlineCmd(start);
+            cr.setDefaultCmd(help.getCommand());
+            cr.setDefaultInlineCmd(start.getCommand());
 
         } catch (TwoCommandException e) {
-            logger.error(e.getMessage());
+            logger.error(getClass().toString(), e);
         }
     }
 
@@ -75,6 +84,21 @@ public class ViaggiaTrentoBot extends BotHandler {
 
     @Override
     protected void onFailure(Exception e) {
-        logger.error(e.getMessage());
+        logger.error(getClass().toString(), e);
+    }
+
+    @Override
+    public void onSucceed(Entity entity) {
+        logger.info("Chatbase sent : " + entity.getEntity().toString());
+    }
+
+    @Override
+    public void onFailure(Response response) {
+        logger.error(response.readEntity(String.class));
+    }
+
+    @Override
+    public void onException(Throwable throwable) {
+        logger.error("Chatbase", throwable);
     }
 }

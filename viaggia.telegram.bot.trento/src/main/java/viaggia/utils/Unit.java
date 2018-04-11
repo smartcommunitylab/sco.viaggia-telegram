@@ -1,16 +1,17 @@
-package viaggia.command.parking.general.utils;
+package viaggia.utils;
 
 /**
- * Created by Luca Mosetti in 2017
+ * @author Luca Mosetti
+ * @since 2017
  */
 public enum Unit {
 
     KILOMETER(1.609344, "km"),
-    METER(1.609344 * 100, "m"),
+    METER(KILOMETER.getValue() * 1000, "m"),
     NAUTICAL_MILES(0.8684, "nmi");
 
-    private double value;
-    private String abbreviation;
+    private final double value;
+    private final String abbreviation;
 
     Unit(double value, String abbreviation) {
         this.value = value;

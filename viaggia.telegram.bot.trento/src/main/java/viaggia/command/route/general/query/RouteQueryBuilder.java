@@ -1,14 +1,15 @@
 package viaggia.command.route.general.query;
 
-import bot.model.Command;
-import bot.model.query.QueryBuilder;
+import gekoramy.telegram.bot.model.Command;
+import gekoramy.telegram.bot.model.query.QueryBuilder;
 import it.sayservice.platform.smartplanner.data.message.otpbeans.Id;
 
 /**
- * Created by Luca Mosetti in 2017
- * <p>
  * QueryBuilder for Routes in general
  * (Bus and Train information)
+ *
+ * @author Luca Mosetti
+ * @since 2017
  */
 public class RouteQueryBuilder extends QueryBuilder implements RouteRegex {
 
@@ -30,6 +31,11 @@ public class RouteQueryBuilder extends QueryBuilder implements RouteRegex {
 
     public RouteQueryBuilder setStopId(String stopId) {
         put(STOP_ID, stopId);
+        return this;
+    }
+
+    public RouteQueryBuilder newMessage() {
+        put(NEW_MESSAGE, "1");
         return this;
     }
 }
