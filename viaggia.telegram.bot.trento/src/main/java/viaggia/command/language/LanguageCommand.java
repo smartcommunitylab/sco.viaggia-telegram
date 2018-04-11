@@ -29,7 +29,13 @@ import java.util.*;
  */
 public class LanguageCommand extends DistinguishedUseCaseCommand {
     private final static Command COMMAND_ID = new Command("language", "language_description");
-    private final static Locale[] languages = {Locale.ITALY, Locale.US, Locale.FRANCE, Locale.GERMANY};
+    private final static Locale[] languages = {
+            Locale.ITALY,
+            Locale.US,
+            Locale.FRANCE,
+            Locale.GERMANY,
+    };
+    private final static Locale trentino = new Locale.Builder().setLanguage("tn").setRegion("IT").build();
 
     public LanguageCommand() {
         super(COMMAND_ID);
@@ -89,6 +95,11 @@ public class LanguageCommand extends DistinguishedUseCaseCommand {
                     .setLanguage(locale.toLanguageTag())
                     .build()));
         }
+
+        buttons.add(new AbstractMap.SimpleEntry<>("Trentino", new LanguageQueryBuilder()
+                .setCommand(getCommand())
+                .setLanguage(trentino.toLanguageTag())
+                .build()));
 
         return new InlineKeyboardMarkupBuilder()
                 .addSeparateRowsKeyboardButtons(2, buttons)
